@@ -880,8 +880,21 @@ async function loadSaved() {
     window.__savedMeta = meta || {}; calcHtml = html; return true;
   } catch (e) { console.error('load failed', e); return false; }
 }
+function isStandalone() { return !!(navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches)); }
+function fitCalc() {
+  // Home Screen mode can report a viewport a little shorter than the screen (the home-indicator strip), which leaves a gap. Use the full screen height there.
+  const w = $('#calcWrap'); let H = window.innerHeight; const full = Math.max(screen.height || 0, screen.width || 0);
+  if (isStandalone() && full > H && full - H <= 120) H = full;
+  w.style.height = H + 'px';
+}
+addEventListener('resize', () => fitCalc()); addEventListener('orientationchange', () => setTimeout(fitCalc, 200));
+function devInfo() {
+  const p = document.createElement('div'); p.style.cssText = 'position:fixed;visibility:hidden;padding-bottom:env(safe-area-inset-bottom)'; document.body.appendChild(p); const sab = getComputedStyle(p).paddingBottom; p.remove();
+  const w = $('#calcWrap').getBoundingClientRect();
+  return `Screen ${screen.width}x${screen.height}, window ${innerWidth}x${innerHeight}, safe bottom ${sab}, home screen mode ${isStandalone()}, calculator area ${Math.round(w.width)}x${Math.round(w.height)}`;
+}
 function showCalc(html) {
-  calcHtml = html; hideMenu(); document.body.classList.add('calcmode');
+  calcHtml = html; hideMenu(); document.body.classList.add('calcmode'); fitCalc();
   const fr = $('#calcFrame'); fr.srcdoc = html; $('main').classList.remove('boot');
 }
 function leaveCalc() { document.body.classList.remove('calcmode'); $('#calcFrame').srcdoc = ''; hideMenu(); }
@@ -939,7 +952,7 @@ function renderMenu(view, arg) {
     $('#mFile').onchange = e => { const f = e.target.files[0]; if (!f) return; files[i] = f; delete thumbURL[i]; dirty = true; renderMenu('detail', i); };
   } else if (view === 'details') {
     const md = window.__savedMeta || {};
-    m.innerHTML = `<div class="row sp"><button id="mBack">Back</button></div><h2 style="margin-top:6px">Build details</h2><pre>${esc(md.log || '')}</pre><table>${md.diag || ''}</table>`;
+    m.innerHTML = `<div class="row sp"><button id="mBack">Back</button></div><h2 style="margin-top:6px">Build details</h2><div class="sub" style="color:#9a9a9a">${esc(devInfo())}</div><pre>${esc(md.log || '')}</pre><table>${md.diag || ''}</table>`;
     done('mBack', () => renderMenu('home'));
   }
 }
