@@ -2,8 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Calculator Builder (test)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Calculator">
+<meta name="theme-color" content="#000000">
+<title>Calculator</title>
 <style>
   :root{color-scheme:dark}
   body{margin:0;font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#111;color:#e8e8e8}
@@ -38,6 +43,17 @@
   .vbtn.ok{background:#1f4d2e;border-color:#2f7a47} .vbtn.no{background:#5a2323;border-color:#8a3636}
   .chips{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
   .chip{padding:3px 9px;border-radius:99px;font-size:12px;background:#222;color:#aaa} .chip.ok{background:#1f4d2e;color:#bdf0cc} .chip.no{background:#5a2323;color:#ffc6c6}
+  main.boot{visibility:hidden}
+  body.calcmode main{display:none}
+  #calcWrap{display:none;position:fixed;inset:0;background:#000;z-index:5} body.calcmode #calcWrap{display:block}
+  #calcFrame{width:100%;height:100%;border:0;background:#000;display:block}
+  #menu{display:none;position:fixed;inset:0;background:#111;z-index:20;overflow:auto;-webkit-overflow-scrolling:touch;padding:calc(env(safe-area-inset-top) + 16px) 16px 60px} #menu.on{display:block}
+  #menu .inner{max-width:520px;margin:0 auto}
+  .msec{margin:22px 0 6px;color:#f09a37;font-weight:600;font-size:13px;letter-spacing:.04em;text-transform:uppercase}
+  .mrow{display:flex;gap:10px;align-items:center;padding:8px 4px;border-bottom:1px solid #222;cursor:pointer}
+  .mrow img{height:44px;border-radius:4px;border:1px solid #333} .mrow .n{width:26px;color:#777;text-align:right}
+  .mrow .st{margin-left:auto;font-size:12px;color:#9a9a9a} .mrow .st.miss{color:#f0c24a}
+  #menu button.wide{display:block;width:100%;text-align:left;margin:6px 0}
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;padding:20px;z-index:9}
   .modal.on{display:flex} .modal>div{background:#1b1b1b;border:1px solid #444;border-radius:14px;padding:18px;max-width:420px}
   .modal button{display:block;width:100%;margin-top:8px;text-align:left}
@@ -53,7 +69,7 @@
 </style>
 </head>
 <body>
-<main>
+<main class="boot">
   <div class="screen on" id="s-intro">
     <h1>Calculator Builder</h1>
     <p class="sub">Everything runs in this page. Your screenshots never leave your device.</p>
@@ -114,6 +130,7 @@
   </div></div>
 
   <div class="screen" id="s-res">
+  <div class="row"><button id="resBack">Back</button></div>
   <h2>Log</h2>
   <pre id="log">Waiting for screenshots.</pre>
 
@@ -131,9 +148,11 @@
   </div>
   </div>
 </main>
+<div id="calcWrap"><iframe id="calcFrame" title="Calculator"></iframe></div>
+<div id="menu"><div class="inner" id="menuBody"></div></div>
 <script>
 const RUNTIME = "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover\">\n<meta name=\"apple-mobile-web-app-capable\" content=\"yes\">\n<meta name=\"mobile-web-app-capable\" content=\"yes\">\n<meta name=\"apple-mobile-web-app-status-bar-style\" content=\"black-translucent\">\n<meta name=\"apple-mobile-web-app-title\" content=\"Calculator\">\n<meta name=\"theme-color\" content=\"#000000\">\n<title>Calculator<\/title>\n<style>\n  :root{--ar:0.4622}\n  html,body{margin:0;height:100%;background:#000;overflow:hidden;overscroll-behavior:none;\n    -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}\n  #stage{position:relative;margin:0 auto;height:100dvh;width:min(100vw,calc(100dvh * var(--ar)));\n    max-height:calc(100vw / var(--ar));aspect-ratio:var(--ar);touch-action:none}\n  #base,#disp,#disp2{position:absolute;left:0;width:100%;display:block;pointer-events:none}\n  #base{top:0;height:100%}\n  .key{position:absolute;touch-action:none;cursor:default}\n  .key img{position:absolute;inset:0;width:100%;height:100%;display:none;pointer-events:none}\n  .key img.on{display:block}\n<\/style>\n<\/head>\n<body>\n<div id=\"stage\">\n  <img id=\"base\" alt=\"\">\n  <canvas id=\"disp2\"><\/canvas>\n  <canvas id=\"disp\"><\/canvas>\n<\/div>\n<script>\nconst ASSETS = /*ASSETS*/;\nconst BASE_IMG = \"data:image/png;base64,\" + \"/*BASE*/\";\nconst META = ASSETS.meta;\n\n/* ---------- layout (all coordinates come from the user's own screenshots) ---------- */\nconst SRC_W = META.W, SRC_H = META.H;\nconst X0 = META.xs, Y0 = META.ys, KW = META.kw, KH = META.kh;\nconst LAYOUT = [['back','ac','pct','div'],['7','8','9','mul'],['4','5','6','sub'],['1','2','3','add'],['neg','0','dot','eq']];\nconst OPSYM = {div:'\u00f7', mul:'\u00d7', sub:'\u2212', add:'+'};\nconst SYMOP = {'\u00f7':'div','\u00d7':'mul','\u2212':'sub','+':'add'};\ndocument.documentElement.style.setProperty('--ar', SRC_W / SRC_H);\n\n/* ---------- display text renderer ---------- */\nconst canvas = document.getElementById('disp'), ctx = canvas.getContext('2d');\ncanvas.width = SRC_W; canvas.height = META.bandH;\ncanvas.style.top = (META.bandY0 / SRC_H * 100) + '%';\ncanvas.style.height = (META.bandH / SRC_H * 100) + '%';\nconst canvas2 = document.getElementById('disp2'), ctx2 = canvas2.getContext('2d');\nif (META.sm) { canvas2.width = SRC_W; canvas2.height = META.sm.h; canvas2.style.top = (META.sm.y0 / SRC_H * 100) + '%'; canvas2.style.height = (META.sm.h / SRC_H * 100) + '%'; }\nconst gimg = {};\nlet pending = 0;\nwindow.__ready = false;\nfor (const [ch, g] of Object.entries(ASSETS.glyphs)) {\n  const im = new Image(); pending++;\n  im.onload = () => { if (--pending === 0) { window.__ready = true; refresh(); } };\n  im.src = 'data:image/png;base64,' + g.img; gimg[ch] = im;\n}\nif (pending === 0) window.__ready = true;\nconst FALLBACK_FONT = '300 ' + Math.round(META.halfCap * 2 / 0.705) + 'px -apple-system, \"SF Pro Display\", Helvetica, Arial, sans-serif';\nfunction fallbackAdv(ch){ ctx.font = FALLBACK_FONT; return ctx.measureText(ch).width; }\nfunction metricsOf(c) {\n  const g = ASSETS.glyphs[c];\n  if (g) return { g, A: g.A, B: g.B, inkw: g.inkw, rsb: g.rsb };\n  const a = fallbackAdv(c); return { g: null, A: a, B: 0, inkw: a, rsb: 0 };\n}\nfunction pairDist(a, b, ma, mb) {\n  const p = ASSETS.pairs[a + b]; if (p !== undefined) return p;\n  return ma.A + mb.B;\n}\nfunction drawText(str) {\n  ctx.clearRect(0, 0, canvas.width, canvas.height);\n  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';\n  const chars = Array.from(str), n = chars.length;\n  const m = chars.map(metricsOf);\n  const d = [];\n  for (let i = 0; i < n - 1; i++) d.push(pairDist(chars[i], chars[i + 1], m[i], m[i + 1]));\n  const T = d.reduce((a, b) => a + b, 0) + m[n - 1].inkw + m[n - 1].rsb;\n  let s = Math.min(1, META.Wp / T);\n  const FL = META.floorS || 0, over = FL > 0 && s < FL; if (over) s = FL;\n  const xr = over ? (META.xrOver || META.xr) : META.xr;\n  const baseline = META.cy + META.halfCap * s;\n  const xs = new Array(n);\n  xs[n - 1] = xr - s * m[n - 1].rsb - s * m[n - 1].inkw;\n  for (let i = n - 2; i >= 0; i--) xs[i] = xs[i + 1] - s * d[i];\n  for (let i = 0; i < n; i++) {\n    const g = m[i].g;\n    if (xs[i] + s * (m[i].inkw + 10) < 0) continue;\n    if (g) ctx.drawImage(gimg[chars[i]], xs[i] - s * g.pad, baseline + s * (g.top - g.pad), g.w * s, g.h * s);\n    else { ctx.font = FALLBACK_FONT; ctx.save(); ctx.translate(xs[i], baseline); ctx.scale(s, s);\n      ctx.fillStyle = '#fff'; ctx.textBaseline = 'alphabetic'; ctx.fillText(chars[i], 0, 0); ctx.restore(); }\n  }\n  if (over && META.fadeX1 > 0) {\n    ctx.globalCompositeOperation = 'destination-in';\n    const gr = ctx.createLinearGradient(META.fadeX0, 0, META.fadeX1, 0); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,1)');\n    ctx.fillStyle = gr; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.globalCompositeOperation = 'source-over';\n  }\n}\n\nfunction drawSmall(str) {\n  const sm = META.sm; if (!sm) return;\n  ctx2.globalAlpha = 1; ctx2.clearRect(0, 0, canvas2.width, canvas2.height);\n  if (!str) return;\n  ctx2.imageSmoothingEnabled = true; ctx2.imageSmoothingQuality = 'high';\n  const chars = Array.from(str), n = chars.length, m = chars.map(metricsOf);\n  let s = sm.s, sp = sm.sp; const d = [];\n  for (let i = 0; i < n - 1; i++) d.push(pairDist(chars[i], chars[i + 1], m[i], m[i + 1]));\n  const T = sp * d.reduce((a, b) => a + b, 0) + s * (m[n - 1].inkw + m[n - 1].rsb);\n  const room = sm.xr - 12; if (T > room) { const f = room / T; s *= f; sp *= f; }\n  const xs = new Array(n); xs[n - 1] = sm.xr - s * m[n - 1].rsb - s * m[n - 1].inkw;\n  for (let i = n - 2; i >= 0; i--) xs[i] = xs[i + 1] - sp * d[i];\n  ctx2.globalAlpha = sm.a;\n  for (let i = 0; i < n; i++) {\n    const g = m[i].g;\n    if (g) ctx2.drawImage(gimg[chars[i]], xs[i] - s * g.pad, sm.base + s * (g.top - g.pad), g.w * s, g.h * s);\n    else { ctx2.font = FALLBACK_FONT; ctx2.save(); ctx2.translate(xs[i], sm.base); ctx2.scale(s, s); ctx2.fillStyle = '#fff'; ctx2.textBaseline = 'alphabetic'; ctx2.fillText(chars[i], 0, 0); ctx2.restore(); }\n  }\n  ctx2.globalAlpha = 1;\n}\n\n/* ---------- calculator engine ---------- */\nconst MAXDIG = META.maxDig || 15;\nlet S;\nfunction reset() { S = { toks: [], cur: '', justEq: false, result: 0, lastOp: null, lastRhs: null, err: false, lastExpr: '' }; }\nreset();\nconst isOp = t => t === '+' || t === '\u2212' || t === '\u00d7' || t === '\u00f7';\nfunction groupInt(i) { return i.replace(/\\B(?=(\\d{3})+(?!\\d))/g, ','); }\nconst NEGPRE = META.negPre !== undefined ? META.negPre : '-', NEGSUF = META.negSuf || '', ERRTXT = META.errText || 'Error';\nfunction fmtNum(str, plain) {\n  let pc = ''; if (str.endsWith('%')) { pc = '%'; str = str.slice(0, -1); }\n  let neg = false; if (str[0] === '-') { neg = true; str = str.slice(1); }\n  const [i, d] = str.split('.');\n  return (neg ? (plain ? '-' : NEGPRE) : '') + groupInt(i) + (d !== undefined ? '.' + d : '') + pc + (neg && !plain ? NEGSUF : '');\n}\nconst numOf = t => t.endsWith('%') ? parseFloat(t) / 100 : parseFloat(t);\nfunction fmtResult(x) {\n  if (!isFinite(x)) return 'Error';\n  x = parseFloat(x.toPrecision(15));\n  let s = String(x);\n  if (/e/.test(s)) { s = x.toExponential(8).replace(/\\.?0+e/, 'e'); return s; }\n  return fmtNum(s, true);\n}\nfunction evalToks(t) {\n  let a = [t[0]];\n  for (let i = 1; i < t.length; i += 2) {\n    const op = t[i], bt = t[i + 1], b = numOf(bt);\n    if (op === '\u00d7' || op === '\u00f7') {\n      const l = numOf(a.pop());\n      if (op === '\u00f7' && b === 0) return NaN;\n      a.push(String(op === '\u00d7' ? l * b : l / b));\n    } else { a.push(op, bt); }\n  }\n  let v = numOf(a[0]);\n  for (let i = 1; i < a.length; i += 2) {\n    const bt = a[i + 1]; let b = numOf(bt); if (bt.endsWith('%')) b = v * b;\n    v = a[i] === '+' ? v + b : v - b;\n  }\n  return v;\n}\nfunction curDigits() { return S.cur.replace(/[-.%]/g, '').length; }\nfunction press(k) {\n  if (S.err && k !== 'ac') reset();\n  if (/^\\d$/.test(k)) {\n    if (S.justEq) { S.toks = []; S.cur = ''; S.justEq = false; }\n    if (S.cur === '0' || S.cur === '-0') S.cur = S.cur.replace('0', '');\n    if (curDigits() < MAXDIG && !S.cur.endsWith('%')) S.cur += k;\n  } else if (k === 'dot') {\n    if (S.justEq) { S.toks = []; S.cur = ''; S.justEq = false; }\n    if (!S.cur.includes('.') && !S.cur.endsWith('%')) S.cur = (S.cur === '' ? '0' : S.cur === '-' ? '-0' : S.cur) + '.';\n  } else if (OPSYM[k]) {\n    const o = OPSYM[k];\n    if (S.justEq) { S.toks = [String(parseFloat(S.result.toPrecision(15)))]; S.justEq = false; }\n    if (S.cur !== '') { S.toks.push(S.cur.replace(/\\.$/, '')); S.cur = ''; S.toks.push(o); }\n    else if (S.toks.length === 0) S.toks = ['0', o];\n    else if (isOp(S.toks[S.toks.length - 1])) S.toks[S.toks.length - 1] = o;\n    else S.toks.push(o);\n  } else if (k === 'eq') {\n    if (S.justEq) {\n      if (S.lastOp) { S.lastExpr = fmtResult(S.result) + S.lastOp + fmtNum(S.lastRhs); const v = evalToks([String(S.result), S.lastOp, S.lastRhs]); S.result = v; if (!isFinite(v)) S.err = true; }\n    } else {\n      let t = S.toks.slice(); if (S.cur !== '') t.push(S.cur.replace(/\\.$/, ''));\n      if (t.length === 0) return;\n      if (isOp(t[t.length - 1])) t.push(t.length >= 2 ? t[t.length - 2] : '0');\n      S.lastExpr = t.map(x => isOp(x) ? x : fmtNum(x)).join('');\n      if (t.length === 1) { S.result = numOf(t[0]); }\n      else {\n        const v = evalToks(t); S.lastOp = t[t.length - 2]; S.lastRhs = t[t.length - 1];\n        S.result = v; if (!isFinite(v)) S.err = true;\n      }\n      S.toks = []; S.cur = ''; S.justEq = true;\n    }\n  } else if (k === 'pct') {\n    if (S.justEq) { S.result = S.result / 100; }\n    else if (S.cur !== '' && S.cur !== '-' && !S.cur.endsWith('%')) S.cur = S.cur.replace(/\\.$/, '') + '%';\n  } else if (k === 'neg') {\n    if (S.justEq) { S.result = -S.result; }\n    else if (S.cur === '') S.cur = '-0';\n    else S.cur = S.cur[0] === '-' ? S.cur.slice(1) : '-' + S.cur;\n  } else if (k === 'back') {\n    if (S.justEq) return;\n    if (S.cur !== '') { S.cur = S.cur.slice(0, -1); if (S.cur === '-') S.cur = ''; }\n    else if (S.toks.length) { const t = S.toks.pop(); if (!isOp(t)) S.cur = t.slice(0, -1); }\n  } else if (k === 'ac') {\n    if (S.cur !== '' && !S.justEq) S.cur = ''; else reset();\n  }\n  refresh();\n}\nfunction displayString() {\n  if (S.err) return ERRTXT;\n  if (S.justEq) return fmtResult(S.result);\n  const parts = S.toks.map(t => isOp(t) ? t : fmtNum(t));\n  let s = parts.join('') + (S.cur !== '' ? fmtNum(S.cur) : '');\n  return s === '' ? '0' : s;\n}\nfunction pendingOp() {\n  if (S.justEq) return null;\n  for (let i = S.toks.length - 1; i >= 0; i--) if (isOp(S.toks[i])) return SYMOP[S.toks[i]];\n  return null;\n}\nconst showC = () => S.cur !== '' && !S.justEq;\n\n/* ---------- DOM: base image and keys ---------- */\nconst stage = document.getElementById('stage');\ndocument.getElementById('base').src = BASE_IMG;\nconst keyEls = {};\nfunction mkImg(parent, name) {\n  const im = document.createElement('img'); im.alt = ''; im.draggable = false;\n  if (name && ASSETS.states[name]) im.src = 'data:image/png;base64,' + ASSETS.states[name]; parent.appendChild(im); return im;\n}\nLAYOUT.forEach((row, r) => row.forEach((k, c) => {\n  const el = document.createElement('div'); el.className = 'key';\n  el.style.left = (X0[c] / SRC_W * 100) + '%'; el.style.top = (Y0[r] / SRC_H * 100) + '%';\n  el.style.width = (KW / SRC_W * 100) + '%'; el.style.height = (KH / SRC_H * 100) + '%';\n  const sel = mkImg(el, k === 'ac' ? 'c_idle' : null);\n  const prs = mkImg(el, k + '_pressed');\n  const prsC = k === 'ac' ? mkImg(el, 'c_pressed') : null;\n  keyEls[k] = { el, sel, prs, prsC, down: false };\n  const release = (act) => {\n    const K = keyEls[k]; if (!K.down) return; K.down = false; paintKey(k);\n    if (act) press(k);\n  };\n  el.addEventListener('pointerdown', e => { e.preventDefault(); el.setPointerCapture?.(e.pointerId); keyEls[k].down = true; paintKey(k); });\n  el.addEventListener('pointerup', e => { e.preventDefault(); release(true); });\n  el.addEventListener('pointercancel', () => release(false));\n  el.addEventListener('lostpointercapture', () => release(false));\n  stage.appendChild(el);\n}));\nfunction paintKey(k) {\n  const K = keyEls[k];\n  if (k === 'ac') {\n    const c = showC();\n    K.sel.classList.toggle('on', c);\n    K.prs.classList.toggle('on', K.down && !c);\n    K.prsC.classList.toggle('on', K.down && c);\n  } else {\n    K.prs.classList.toggle('on', K.down);\n  }\n}\nfunction smallString() { return (META.sm && S.justEq && S.lastExpr && (!S.err || META.sm.onErr)) ? S.lastExpr : ''; }\nfunction refresh() { drawText(displayString()); drawSmall(smallString()); Object.keys(keyEls).forEach(paintKey); }\n// two-finger swipe down: back to the builder\nconst BACK_URL = /*BACKURL*/'';\n(function () {\n  let sy = null;\n  document.addEventListener('touchstart', e => { sy = e.touches.length === 2 ? (e.touches[0].clientY + e.touches[1].clientY) / 2 : null; }, { passive: true });\n  document.addEventListener('touchmove', e => {\n    if (sy === null || e.touches.length !== 2) return;\n    const y = (e.touches[0].clientY + e.touches[1].clientY) / 2;\n    if (y - sy > 80) { sy = null; goBack(); }\n  }, { passive: true });\n  window.goBack = function goBack() {\n    if (window.parent !== window) window.parent.postMessage({ calcBack: 1 }, '*');\n    else if (BACK_URL) location.href = BACK_URL;\n    else if (history.length > 1) history.back();\n  };\n})();\nwindow.__calc = { press, get text() { return displayString(); }, refresh };\nwindow.__render = (t) => { drawText(t); return canvas; };\nwindow.__renderSmall = (t) => { drawSmall(t); return canvas2; };\ndocument.addEventListener('contextmenu', e => e.preventDefault());\ndocument.addEventListener('gesturestart', e => e.preventDefault());\nrefresh();\n<\/script>\n<\/body>\n<\/html>\n";
-addEventListener('message', e => { if (e.data && e.data.calcBack) window.scrollTo({ top: 0, behavior: 'smooth' }); });
+addEventListener('message', e => { if (e.data && e.data.calcBack && e.source === document.getElementById('calcFrame').contentWindow) openMenu(); });
 const PAD = 2;
 
 /* =============================== capture list =============================== */
@@ -272,8 +291,8 @@ $('#upNext').onclick = () => { W.marks = {}; W.vi = 0; goVer(0); };
 /* ---- step 3 ---- */
 const verList = () => expected().filter(i => files[i]);
 let thumbToken = 0;
-async function drawThumb(file, s) {
-  const tok = ++thumbToken; const cv = $('#verCv');
+async function drawThumb(file, s, cvIn) {
+  const tok = ++thumbToken; const cv = cvIn || $('#verCv');
   try {
     const bmp = await createImageBitmap(file); if (tok !== thumbToken) return;
     let sy = 0, sh = bmp.height; if (s.type === 'num' || s.type === 'max' || s.type === 'rest') { sy = Math.round(bmp.height * .22); sh = Math.round(bmp.height * .21); }
@@ -327,7 +346,7 @@ function goSum() {
   $('#build').textContent = bad.length ? 'Build anyway' : 'Build the calculator'; $('#build').disabled = !files[0];
 }
 $('#sumBack').onclick = () => goVer(Math.max(0, verList().length - 1));
-$('#build').addEventListener('click', () => { show('s-res'); });
+$('#build').addEventListener('click', () => { hideMenu(); $('#resBack').style.display = 'none'; show('s-res'); });
 
 /* ---- start ---- */
 (function init() {
@@ -467,10 +486,12 @@ function brighten(crop, f) {
 
 /* =============================== the build =============================== */
 async function runBuild() {
-  logBuf = []; $('#result').style.display = 'none'; $('#build').disabled = true;
+  logBuf = []; $('#result').style.display = 'none'; $('#build').disabled = true; $('#resBack').style.display = 'none';
   SLOTS.forEach(s => { s.status = files[SLOTS.indexOf(s)] ? 'ok' : null; s.msg = null; });
-  try { await build(); } catch (e) { log('FAILED: ' + e.message); console.error(e); }
-  renderSlots();
+  let ok = false;
+  try { await build(); ok = true; } catch (e) { log('FAILED: ' + e.message); console.error(e); }
+  $('#build').disabled = !files[0];
+  if (ok) await afterBuild(); else { $('#resBack').style.display = 'inline-block'; show('s-res'); }
 }
 $('#build').onclick = runBuild;
 
@@ -704,6 +725,7 @@ async function build() {
   const assets = { meta: { W, H, xs, ys, kw, kh, bandY0, bandH, cy, halfCap, xr: X, Wp, maxDig, floorS, xrOver, fadeX0: fade[0], fadeX1: fade[1], negPre, negSuf, errText, sm }, glyphs, pairs, states };
   const backUrl = /^https?:/.test(location.href) ? location.href.split('#')[0] : '';
   const html = RUNTIME.replace('/*BACKURL*/\'\'', () => JSON.stringify(backUrl)).replace('/*ASSETS*/', () => JSON.stringify(assets)).replace('/*BASE*/', () => baseB64);
+  window.__lastHtml = html;
   const blob = new Blob([html], { type: 'text/html' }); const url = URL.createObjectURL(blob);
   $('#dl').href = url; $('#dlinfo').textContent = `${(html.length / 1024 / 1024).toFixed(2)} MB`;
   $('#result').style.display = 'block';
@@ -747,6 +769,101 @@ function diagnose(pv, recs, W, bandH, sm) {
   log(`Reconstruction check done. Largest glyph position error: ${worst} px (screens are ${W} px wide).`);
 }
 
+
+/* =============================== storage, calculator, secret menu =============================== */
+function idb() { return new Promise((res, rej) => { const r = indexedDB.open('calcbuilder', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+async function kvGet(k) { const db = await idb(); return new Promise((res, rej) => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); }
+async function kvSet(k, v) { const db = await idb(); return new Promise((res, rej) => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = () => res(); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error); }); }
+async function kvClear() { const db = await idb(); return new Promise((res, rej) => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').clear(); t.oncomplete = () => res(); t.onerror = () => rej(t.error); }); }
+
+let calcHtml = null, dirty = false;
+async function saveBuild(html) {
+  try {
+    await kvSet('html', html);
+    const fl = []; for (let i = 0; i < files.length; i++) if (files[i]) fl.push({ i, name: files[i].name || ('shot' + i + '.png'), type: files[i].type || 'image/png', lm: files[i].lastModified || 0, buf: await files[i].arrayBuffer() });
+    await kvSet('files', fl);
+    await kvSet('meta', { labels: SLOTS.map(x => [x.text, x.small, x.limit]), log: logBuf.join('\n'), diag: $('#diag').innerHTML });
+    return true;
+  } catch (e) { console.error('save failed', e); return false; }
+}
+async function loadSaved() {
+  try {
+    const html = await kvGet('html'); if (!html) return false;
+    const meta = await kvGet('meta'), fl = (await kvGet('files')) || [];
+    if (meta && meta.labels && meta.labels.length === SLOTS.length) meta.labels.forEach((l, i) => { if (typeof l[0] === 'string') SLOTS[i].text = l[0]; if (typeof l[1] === 'string') SLOTS[i].small = l[1]; if (l[2] !== undefined) SLOTS[i].limit = l[2]; });
+    fl.forEach(f => { files[f.i] = new File([f.buf], f.name, { type: f.type, lastModified: f.lm }); });
+    window.__savedMeta = meta || {}; calcHtml = html; return true;
+  } catch (e) { console.error('load failed', e); return false; }
+}
+function showCalc(html) {
+  calcHtml = html; hideMenu(); document.body.classList.add('calcmode');
+  const fr = $('#calcFrame'); fr.srcdoc = html; $('main').classList.remove('boot');
+}
+function leaveCalc() { document.body.classList.remove('calcmode'); $('#calcFrame').srcdoc = ''; hideMenu(); }
+async function afterBuild() {
+  calcHtml = window.__lastHtml; dirty = false;
+  const saved = await saveBuild(calcHtml);
+  window.__savedMeta = { log: logBuf.join('\n'), diag: $('#diag').innerHTML };
+  if (!saved) alert('The calculator was built but this browser would not save it, so it will be gone when you close the page.');
+  showCalc(calcHtml);
+}
+$('#resBack').onclick = () => { if (calcHtml) showCalc(calcHtml); else show('s-sum'); };
+
+/* ---- secret menu (two-finger swipe down on the calculator) ---- */
+const thumbURL = {};
+const turl = i => thumbURL[i] || (thumbURL[i] = URL.createObjectURL(files[i]));
+function hideMenu() { $('#menu').classList.remove('on'); }
+function openMenu() { renderMenu('home'); $('#menu').classList.add('on'); $('#menu').scrollTop = 0; }
+function renderMenu(view, arg) {
+  const m = $('#menuBody'); const done = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
+  if (view === 'home') {
+    m.innerHTML = `<h1 style="margin-top:0">Menu</h1>
+      <div class="msec">Trick options</div><div class="sub" style="color:#9a9a9a">Nothing here yet. The trick controls will go in this section.</div>
+      <div class="msec">Screenshots</div>
+      <button class="wide" id="mList">Review and edit screenshots${dirty ? ' (changes waiting)' : ''}</button>
+      <button class="wide" id="mRedo">Redo the guided screenshot steps</button>
+      <div class="msec">Build</div>
+      <button class="wide" id="mDetails">Build details</button>
+      <button class="wide" id="mSave">Save a copy of the calculator (index.html)</button>
+      <div class="msec">Danger</div>
+      <button class="wide" id="mReset">Start over and erase everything</button>
+      <div class="row" style="margin-top:24px"><button class="primary big" id="mClose">Back to calculator</button></div>`;
+    done('mClose', hideMenu); done('mList', () => renderMenu('list')); done('mDetails', () => renderMenu('details'));
+    done('mRedo', () => { hideMenu(); leaveCalc(); W.list = SLOTS.map((_, i) => i); W.skipped = {}; W.retake = false; W.marks = {}; W.uploaded = []; $('main').classList.remove('boot'); goCap(0); });
+    done('mSave', () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([calcHtml], { type: 'text/html' })); a.download = 'index.html'; document.body.appendChild(a); a.click(); a.remove(); });
+    done('mReset', async () => { if (!confirm('Erase the calculator and all screenshots from this device?')) return; try { await kvClear(); localStorage.removeItem('calcbuilder'); } catch (e) {} location.reload(); });
+  } else if (view === 'list') {
+    m.innerHTML = `<div class="row sp"><button id="mBack">Back</button>${dirty ? '<button class="primary" id="mRebuild">Rebuild calculator</button>' : ''}</div><h2 style="margin-top:6px">Screenshots</h2>` +
+      SLOTS.map((s, i) => `<div class="mrow" data-i="${i}"><span class="n">${i + 1}</span>${files[i] ? `<img src="${turl(i)}">` : '<span style="width:25px"></span>'}<span>${esc(s.title)}${s.text && s.type === 'num' ? `<br><span style="color:#9a9a9a;font-size:12px">shows ${esc(s.text)}</span>` : ''}</span><span class="st ${files[i] ? '' : 'miss'}">${files[i] ? 'tap to review' : 'missing'}</span></div>`).join('');
+    done('mBack', () => renderMenu('home')); done('mRebuild', () => { hideMenu(); leaveCalc(); show('s-res'); $('#resBack').style.display = 'none'; runBuild(); });
+    m.querySelectorAll('.mrow').forEach(r => r.onclick = () => renderMenu('detail', +r.dataset.i));
+  } else if (view === 'detail') {
+    const i = arg, s = SLOTS[i];
+    m.innerHTML = `<div class="row sp"><button id="mBack">Back</button></div><h2 style="margin-top:6px">${i + 1}. ${esc(s.title)}</h2>
+      <div class="vcard">${files[i] ? '<canvas id="mCv"></canvas>' : '<div class="words">No screenshot yet.</div>'}</div>
+      ${s.type === 'num' ? `<div class="msec">What the calculator shows</div><input class="field" id="mText" value="${esc(s.text)}" autocomplete="off" autocapitalize="off" spellcheck="false" style="width:100%;box-sizing:border-box">` : ''}
+      ${s.small !== undefined ? `<div class="msec">Small grey line above it (empty if none)</div><input class="field" id="mSmall" value="${esc(s.small)}" autocomplete="off" autocapitalize="off" spellcheck="false" style="width:100%;box-sizing:border-box">` : ''}
+      ${s.type === 'max' ? `<div class="msec">Digits it accepted (empty if unknown)</div><input class="field" id="mLim" inputmode="numeric" value="${esc(s.limit)}" style="width:100px">` : ''}
+      <div class="row"><label class="btn big">${files[i] ? 'Replace screenshot' : 'Add screenshot'}<input type="file" id="mFile" accept="image/*"></label></div>
+      <div class="sub" style="color:#9a9a9a">Changes apply when you tap Rebuild calculator.</div>`;
+    if (files[i]) drawThumb(files[i], s, $('#mCv'));
+    done('mBack', () => renderMenu('list'));
+    const t = $('#mText'); if (t) t.oninput = e => { SLOTS[i].text = e.target.value.trim(); dirty = true; };
+    const sm = $('#mSmall'); if (sm) sm.oninput = e => { SLOTS[i].small = e.target.value; dirty = true; };
+    const li = $('#mLim'); if (li) li.oninput = e => { SLOTS[i].limit = e.target.value.replace(/\D/g, ''); dirty = true; };
+    $('#mFile').onchange = e => { const f = e.target.files[0]; if (!f) return; files[i] = f; delete thumbURL[i]; dirty = true; renderMenu('detail', i); };
+  } else if (view === 'details') {
+    const md = window.__savedMeta || {};
+    m.innerHTML = `<div class="row sp"><button id="mBack">Back</button></div><h2 style="margin-top:6px">Build details</h2><pre>${esc(md.log || '')}</pre><table>${md.diag || ''}</table>`;
+    done('mBack', () => renderMenu('home'));
+  }
+}
+
+/* ---- boot: open straight into the saved calculator if there is one ---- */
+(async function boot() {
+  const had = await loadSaved();
+  if (had) showCalc(calcHtml); else $('main').classList.remove('boot');
+})();
 renderSlots();
 </script>
 </body>
