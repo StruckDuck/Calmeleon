@@ -46,7 +46,7 @@
   main.boot{visibility:hidden}
   body.calcmode main{display:none}
   html:has(body.calcmode){background:#000;overflow:hidden;height:100%}
-  body.calcmode{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+  body.calcmode{background:#000;position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:manipulation;-webkit-user-select:none;user-select:none}
   #calcWrap{display:none;position:fixed;top:0;left:0;width:100%;height:100%;height:100dvh;background:#000;z-index:5;touch-action:none;overscroll-behavior:none} body.calcmode #calcWrap{display:block}
   #calcFrame{width:100%;height:100%;border:0;background:#000;display:block;touch-action:none}
   #menu{display:none;position:fixed;inset:0;background:#111;z-index:20;overflow:auto;-webkit-overflow-scrolling:touch;padding:calc(env(safe-area-inset-top) + 16px) 16px 60px} #menu.on{display:block}
