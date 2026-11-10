@@ -843,6 +843,7 @@ function devInfo() {
   const w = $('#calcWrap').getBoundingClientRect();
   return `Screen ${screen.width}x${screen.height}, window ${innerWidth}x${innerHeight}, safe bottom ${sab}, home screen mode ${isStandalone()}, calculator area ${Math.round(w.width)}x${Math.round(w.height)}`;
 }
+const TAGS = { bluff: 'Force any number from any equation.', finisher: 'Force any number and it all tracks correctly.', secret: 'Peek the last total after it has been cleared.', nines: 'Any total follows the rule of 9s.' };
 let TRICK = { mode: 'off', answer: '' };
 try { const t = JSON.parse(localStorage.getItem('calctrick') || 'null'); if (t && t.mode) TRICK = t; } catch (e) {}
 function pushTrick() { try { $('#calcFrame').contentWindow.__setTrick(TRICK); } catch (e) {} }
@@ -872,7 +873,8 @@ function renderMenu(view, arg) {
   if (view === 'home') {
     m.innerHTML = `<h1 style="margin-top:0">Menu</h1>
       <div class="msec">Trick options</div>
-      <div class="row" style="flex-wrap:wrap">${[['off', 'Off'], ['bluff', "Alive Man's Bluff"], ['nines', 'mmmmmmmmm fudge'], ['finisher', 'FINISHER!!'], ['secret', 'Secret Knowledge'], ['nerd', 'Nerd Alert']].map(([k, l]) => `<button class="${TRICK.mode === k ? 'primary' : ''}" data-tm="${k}">${l}</button>`).join('')}</div>
+      <div class="row" style="flex-wrap:wrap">${[['off', 'Off'], ['bluff', 'Bwuff'], ['nines', 'mmmmmmmmm fudge'], ['finisher', 'Buff Bwuff'], ['secret', 'Cardinal Knowledge'], ['nerd', 'Nerd Alert']].map(([k, l]) => `<button class="${TRICK.mode === k ? 'primary' : ''}" data-tm="${k}">${l}</button>`).join('')}</div>
+      ${TAGS[TRICK.mode] ? `<div style="margin-top:10px;font-weight:600;color:#fff">${TAGS[TRICK.mode]}</div>` : ''}
       ${TRICK.mode === 'bluff' || TRICK.mode === 'finisher' ? `<div class="sub" style="color:#9a9a9a;margin-top:8px">${TRICK.mode === 'bluff' ? 'The answer to show when = is tapped' : 'The number the total should end on'}</div><input class="field" id="tAns" inputmode="decimal" value="${esc(TRICK.answer)}" autocomplete="off" style="width:100%;box-sizing:border-box">` : ''}
       ${TRICK.mode === 'nerd' ? `<div class="sub" style="color:#9a9a9a;margin-top:8px">Formula (use x for the number)</div><input class="field" id="tFormula" value="${esc(TRICK.formula || '')}" placeholder="x*2+1" autocomplete="off" autocapitalize="off" spellcheck="false" style="width:100%;box-sizing:border-box"><div class="sub" id="tFErr" style="color:#f0c24a"></div>
         <div class="sub" style="color:#9a9a9a;margin-top:8px">Apply it to: answer, last, or which number in the problem (1 is the first, 2 the second)</div><input class="field" id="tTarget" value="${esc(TRICK.target || 'answer')}" autocomplete="off" autocapitalize="off" spellcheck="false" style="width:100%;box-sizing:border-box"><div class="sub" id="tTErr" style="color:#f0c24a"></div>
