@@ -67,6 +67,8 @@
   .nbv,.nbe{white-space:nowrap} .nbn.on{border-color:#f09a37;background:#2a1a08} .nbe{border-style:dashed;color:#f0c24a;min-width:24px;justify-content:center} .nbf>b{color:#f09a37} .nbsym{color:#f09a37;padding:0 4px} .nbn i{font-style:normal;color:#777}
   .nbpick{background:#161616;border:1px solid #333;border-radius:10px;padding:10px;margin-top:8px} .nbpick .row{margin:4px 0 10px} .nbfl{display:grid;gap:5px;margin:4px 0 10px} .nbfl button{display:block;text-align:left;margin:0} .nbfl button span{display:block;color:#9a9a9a;font-size:13px;font-weight:400}
   .nbeng{margin-top:12px;color:#fff;font-weight:600;line-height:1.4} .nbres{margin-top:6px;color:#f09a37;font-weight:600}
+  details.sec{border-bottom:1px solid #2a2a2a;padding-bottom:4px} details.sec>summary{list-style:none;color:#f09a37;font-weight:600;font-size:13px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;padding:14px 0 8px} details.sec>summary::-webkit-details-marker{display:none}
+  details.sec>summary::before{content:'▸';display:inline-block;width:16px} details.sec[open]>summary::before{content:'▾'}
   details.exp{margin-top:18px} details.exp summary{color:#f09a37;font-weight:600;font-size:13px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer}
   .warnbox{background:#2a1a08;border:1px solid #f09a37;border-radius:10px;padding:10px 12px;margin:10px 0;line-height:1.45}
   .modal ol,.guidesteps{margin:8px 0;padding-left:22px;line-height:1.5} .modal li{margin:4px 0}
@@ -1183,16 +1185,42 @@ function nbInit() {
   nbRender();
 }
 
+/* ---- Buff modes: suggested digit lengths ---- */
+const dg = n => String(Math.floor(Math.abs(n))).length, fmt = n => Math.round(n).toLocaleString('en-US');
+function bSuggest(T, style, n) {
+  T = Math.round(Math.abs(T)); if (!(T >= 10)) return 'The target is too small to suggest digit lengths. Use small numbers.';
+  if (style === 'mul') {
+    const dp = dg(Math.round(T * .65)), da = Math.max(1, Math.ceil(dp / 2)), db = Math.max(1, Math.floor(dp / 2)), lo = Math.ceil(T * .5), hi = Math.floor(T * .8), fl = dg(T - hi), fh = dg(T - lo);
+    return `Ask for a ${da}-digit number times a ${db}-digit number, then add. Keep the product between ${fmt(lo)} and ${fmt(hi)}. The filled-in number comes out as ${fl === fh ? fl : fl + ' to ' + fh} digits. Multiplied numbers cannot match the last one's length, so this aims for a sensible size.`;
+  }
+  n = Math.max(2, Math.min(5, n | 0 || 3));
+  for (let L = dg(Math.round(T / n)); L >= 1; L--) {
+    const lo = Math.max(Math.pow(10, L - 1), Math.ceil((T - (Math.pow(10, L) - 1)) / (n - 1))), hi = Math.min(Math.pow(10, L) - 1, Math.floor((T - Math.pow(10, L - 1)) / (n - 1)));
+    if (lo <= hi) return `Ask for ${n - 1} number${n > 2 ? 's' : ''} of ${L} digit${L > 1 ? 's' : ''} to add, ${n > 2 ? 'each ' : ''}between ${fmt(lo)} and ${fmt(hi)}. The filled-in number then comes out as ${L} digit${L > 1 ? 's' : ''} too.`;
+  }
+  return 'The target is too small for that many numbers. Try fewer.';
+}
+function sugBlock() {
+  let T = NaN;
+  if (TRICK.mode === 'finisher') T = parseFloat(String(TRICK.answer || '').replace(/[,\s]/g, ''));
+  else { try { T = parseFloat(String($('#calcFrame').contentWindow.__extraPreview(Object.assign({ xShow: 'date', xDateSrc: 'now', xTimeSrc: 'now', xFmt: 'us', xYear: 4, xClock: 12, xDelay: 0 }, TRICK))).replace(/,/g, '')); } catch (e) {} }
+  const st = TRICK.sugStyle === 'mul' ? 'mul' : 'add', n = TRICK.sugCount || 3, b = (k, v, l, on) => `<button class="${on ? 'primary' : ''}" data-sg="${k}" data-sv="${v}">${l}</button>`;
+  return `<div class="msec">Suggested setup</div><div class="row">${b('sugStyle', 'add', 'Add', st === 'add')}${b('sugStyle', 'mul', 'Multiply', st === 'mul')}</div>
+    ${st === 'add' ? `<div class="sub" style="color:#9a9a9a">How many numbers will they enter, counting the one that fills in?</div><div class="row">${[2, 3, 4, 5].map(k => b('sugCount', k, k, n === k)).join('')}</div>` : ''}
+    <div class="nh" style="margin-top:6px;color:#fff">${isFinite(T) ? esc(bSuggest(T, st, n)) : 'Type your number above to get a suggestion.'}</div>`;
+}
+
 /* ---- secret menu (two-finger swipe down on the calculator) ---- */
 const thumbURL = {};
 const turl = i => thumbURL[i] || (thumbURL[i] = URL.createObjectURL(files[i]));
 function hideMenu() { $('#menu').classList.remove('on'); }
+const M_OPEN = { trick: true, shots: false, build: false, home: false, danger: false };
 function openMenu() { renderMenu('home'); $('#menu').classList.add('on'); $('#menu').scrollTop = 0; }
 function renderMenu(view, arg) {
   const m = $('#menuBody'); const done = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
   if (view === 'home') {
     m.innerHTML = `<h1 style="margin-top:0">Menu</h1>
-      <div class="msec">Trick options</div>
+      <details class="sec" data-sec="trick"${M_OPEN.trick ? ' open' : ''}><summary>Trick options</summary>
       <div class="row" style="flex-wrap:wrap">${[['off', 'Off'], ['bluff', 'Bwuff'], ['nines', 'mmmmmmmmm fudge'], ['finisher', 'Buff Bwuff'], ['secret', 'Cardinal Knowledge'], ['extra', 'EXTRA!!']].map(([k, l]) => `<button class="${TRICK.mode === k ? 'primary' : ''}" data-tm="${k}">${l}</button>`).join('')}</div>
       ${TAGS[TRICK.mode] ? `<div style="margin-top:10px;font-weight:600;color:#fff">${TAGS[TRICK.mode]}</div>` : ''}
       ${TRICK.mode === 'bluff' || TRICK.mode === 'finisher' ? `<div class="sub" style="color:#9a9a9a;margin-top:8px">${TRICK.mode === 'bluff' ? 'The answer to show when = is tapped' : 'The number the total should end on'}</div><input class="field" id="tAns" inputmode="decimal" value="${esc(TRICK.answer)}" autocomplete="off" style="width:100%;box-sizing:border-box">` : ''}
@@ -1212,26 +1240,30 @@ function renderMenu(view, arg) {
         <div class="sub" style="color:#9a9a9a;margin-top:10px">Close-up of the 5 key, mark at 12 o'clock</div><canvas id="pvA" style="display:block;margin-top:4px;width:270px;max-width:100%;height:auto"></canvas>
         <div class="sub" style="color:#9a9a9a;margin-top:10px">Same key at its real size</div><canvas id="pvB" style="display:block;margin-top:4px"></canvas>
         <div class="sub" id="pvT" style="color:#9a9a9a"></div><div class="row"><button id="tTest">Show a test pattern (12345678)</button></div>` : ''}
+      ${TRICK.mode === 'finisher' || (TRICK.mode === 'extra' && TRICK.xBuff) ? sugBlock() : ''}
       <div class="sub" style="color:#9a9a9a;margin-top:8px">${TRICK.mode === 'off' ? 'No trick selected.' : TRICK.mode === 'bluff' ? 'Every = shows your answer, with the real sum in the small grey line.' : TRICK.mode === 'nerd' ? '' : TRICK.mode === 'extra' ? 'Every = shows the date or the time as plain digits, with the real sum in the small grey line. It is worked out at the moment you tap =. A calculator drops leading zeros, so 9:05 shows as 905.' : TRICK.mode === 'finisher' ? 'Type the number you want the total to end on. Start a sum, and once a number and a + are on the screen, tap +/− (if the + is not there yet, it waits for you to tap it). After that, every key they tap (digits, operators, =, %, clear, anything) types the next digit of the number that finishes the total, so they can tap randomly. Once the last digit is in, only = does anything. Tap = to show your preset.' : TRICK.mode === 'nines' ? 'On =, a 0 or the last digit of a whole-number total of 10 or more is changed so its digits add to a multiple of 9.' : 'After a sum and =, tap AC. One slightly lighter spot appears on the edge of each key in their answer (up to 8 digits), clockwise from 12 o\'clock. 4 digits or fewer use 12, 3, 6, 9. 5 or more use every 1:30. The spots stay until you tap +/− on the 0 screen (nothing shows on screen). Tapping AC again does not clear them. If spots are showing, the first +/− only clears them, and the next one switches the mode off.'}${TRICK.mode !== 'off' ? '<br>On the 0 screen, tap +/− to switch it on or off. When it is on, the hands of the clock on the history button tilt to the left. It starts off each time the calculator opens.' : ''}</div>
       <details class="exp"${TRICK.mode === 'nerd' ? ' open' : ''}><summary>Experimental</summary>
         <div class="sub" style="color:#9a9a9a;margin:8px 0">Extra things to play with. These may change or go away.</div>
         <div class="row"><button class="${TRICK.mode === 'nerd' ? 'primary' : ''}" data-tm="nerd">Nerd Alert</button></div>
       ${TRICK.mode === 'nerd' ? `<div class="sub" style="color:#9a9a9a;margin-top:8px">Build a formula. It replaces the answer when you tap =.</div><div id="nbWrap"></div>` : ''}
       </details>
-      <div class="msec">Screenshots</div>
+      </details><details class="sec" data-sec="shots"${M_OPEN.shots ? ' open' : ''}><summary>Screenshots</summary>
       <button class="wide" id="mList">Review and edit screenshots${dirty ? ' (changes waiting)' : ''}</button>
       <button class="wide" id="mRedo">Redo the guided screenshot steps</button>
-      <div class="msec">Build</div>
+      </details><details class="sec" data-sec="build"${M_OPEN.build ? ' open' : ''}><summary>Build</summary>
       <button class="wide" id="mDetails">Build details</button>
       <button class="wide" id="mSave">Save a copy of the calculator (index.html)</button>
-      <div class="msec">Home screen</div>
+      </details><details class="sec" data-sec="home"${M_OPEN.home ? ' open' : ''}><summary>Home screen</summary>
       <button class="wide" id="mGuide">How to add this to the home screen</button>
       <button class="wide" id="mCC">Add the calculator to Control Center</button>
-      <div class="msec">Danger</div>
+      </details><details class="sec" data-sec="danger"${M_OPEN.danger ? ' open' : ''}><summary>Danger</summary>
       <button class="wide" id="mReset">Start over and erase everything</button>
+      </details>
       <div class="row" style="margin-top:24px"><button class="primary big" id="mClose">Back to calculator</button></div>`;
+    m.querySelectorAll('details.sec').forEach(d => d.addEventListener('toggle', () => { M_OPEN[d.dataset.sec] = d.open; }));
     m.querySelectorAll('[data-tm]').forEach(b => b.onclick = () => { TRICK.mode = b.dataset.tm; saveTrick(); renderMenu('home'); });
     m.querySelectorAll('[data-xk]').forEach(b => b.onclick = () => { const k = b.dataset.xk, v = b.dataset.xv; TRICK[k] = (k === 'xYear' || k === 'xClock') ? +v : k === 'xBuff' ? !!v : v; saveTrick(); renderMenu('home'); });
+    m.querySelectorAll('[data-sg]').forEach(b => b.onclick = () => { TRICK[b.dataset.sg] = b.dataset.sg === 'sugCount' ? +b.dataset.sv : b.dataset.sv; saveTrick(); renderMenu('home'); });
     const xd = $('#xDate'); if (xd) xd.onchange = e => { TRICK.xDateTyped = e.target.value; saveTrick(); renderMenu('home'); };
     const xt = $('#xTime'); if (xt) xt.onchange = e => { TRICK.xTimeTyped = e.target.value; saveTrick(); renderMenu('home'); };
     const xy = $('#xDelay'); if (xy) xy.onchange = e => { TRICK.xDelay = Math.max(-1440, Math.min(1440, Math.round(+e.target.value) || 0)); saveTrick(); renderMenu('home'); };
@@ -1239,7 +1271,7 @@ function renderMenu(view, arg) {
     const pvDraw = () => { if (!$('#pvA')) return; try { const w = $('#calcFrame').contentWindow; if (typeof w.__previewMarks !== 'function') { $('#pvT').textContent = 'This saved calculator is out of date. Close the app and reopen it.'; return; } const r = w.__previewMarks($('#pvA'), $('#pvB'), TRICK.shift || 22, TRICK.size || 2.5); if (r) { $('#pvB').style.width = (r.width * w.innerWidth) + 'px'; $('#pvT').textContent = `Key colour ${r.key.join(',')}, mark colour ${r.px.join(',')}`; } else $('#pvT').textContent = 'Preview not ready yet, close and reopen the menu.'; } catch (e) { $('#pvT').textContent = 'Preview error: ' + e.message; } };
     const tsh = $('#tShift'); if (tsh) { tsh.oninput = e => { TRICK.shift = +e.target.value; $('#tShiftV').textContent = e.target.value; saveTrick(); pvDraw(); }; $('#tSize').oninput = e => { TRICK.size = +e.target.value; $('#tSizeV').textContent = e.target.value; saveTrick(); pvDraw(); }; pvDraw(); }
     done('tTest', () => { try { $('#calcFrame').contentWindow.__testMarks(); } catch (e) {} hideMenu(); });
-    const ta = $('#tAns'); if (ta) ta.oninput = e => { TRICK.answer = e.target.value.replace(/[^0-9.,-]/g, ''); saveTrick(); };
+    const ta = $('#tAns'); if (ta) ta.onchange = e => { TRICK.answer = e.target.value.replace(/[^0-9.,-]/g, ''); saveTrick(); renderMenu('home'); }; if (ta) ta.oninput = e => { TRICK.answer = e.target.value.replace(/[^0-9.,-]/g, ''); saveTrick(); };
     done('mGuide', () => showGuide()); done('mCC', () => renderMenu('cc'));
     done('mClose', hideMenu); done('mList', () => renderMenu('list')); done('mDetails', () => renderMenu('details'));
     done('mRedo', () => { hideMenu(); leaveCalc(); W.skipped = {}; W.retake = false; W.marks = {}; W.uploaded = []; $('main').classList.remove('boot'); W.list = SLOTS.map((_, i) => i); goCap(0); });
