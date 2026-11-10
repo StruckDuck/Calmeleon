@@ -62,6 +62,10 @@
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;padding:20px;z-index:9}
   .modal.on{display:flex} .modal>div{background:#1b1b1b;border:1px solid #444;border-radius:14px;padding:18px;max-width:420px}
   .modal button{display:block;width:100%;margin-top:8px;text-align:left}
+  .modal.hi{z-index:40;overflow:auto} .modal.hi>div{width:100%;max-height:92vh;overflow:auto;box-sizing:border-box}
+  .warnbox{background:#2a1a08;border:1px solid #f09a37;border-radius:10px;padding:10px 12px;margin:10px 0;line-height:1.45}
+  .modal ol,.guidesteps{margin:8px 0;padding-left:22px;line-height:1.5} .modal li{margin:4px 0}
+  .linkbox{background:#161616;border:1px solid #333;border-radius:8px;padding:10px;word-break:break-all;font-size:14px;margin:8px 0;user-select:all;-webkit-user-select:all}
   pre{background:#0b0b0b;border:1px solid #222;border-radius:8px;padding:12px;white-space:pre-wrap;font:12px/1.5 ui-monospace,Menlo,monospace;max-height:340px;overflow:auto}
   table{border-collapse:collapse;width:100%;font-size:13px} td,th{padding:5px 8px;border-bottom:1px solid #222;text-align:left}
   .previewwrap{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start}
@@ -87,12 +91,13 @@
     <div class="words" id="introTip" style="font-size:15px;background:#1b1b1b;border:1px solid #333;border-radius:10px;padding:10px 12px"><b>Tip:</b> open this same link on a computer to see every step there, so you do not have to keep switching back and forth. Then come back here to upload.</div>
     <div class="row"><button class="primary big" id="startBtn">Start</button><button class="big" id="resumeBtn" style="display:none"></button></div>
     <div class="row"><button id="skipWalk" style="font-size:14px">I already have my screenshots, skip to upload</button></div>
+    <div class="row" id="guideRow"><a href="#" id="guideLink" style="color:#9a9a9a;font-size:14px">How to add this to your home screen</a></div>
   </div>
 
   <div class="screen" id="s-desk">
     <div class="kick">All done here</div>
     <div class="stepTitle">Complete the setup on your phone</div>
-    <div class="words" id="deskWords">Open this page on your phone, take the screenshots, and upload them there. Scan this to open it.</div>
+    <div class="words" id="deskWords">Open this page on your phone, take the screenshots, and upload them there. Scan this to open it. There is also one optional extra on the phone: a screenshot of your home screen showing the Calculator icon, which becomes the app icon.</div>
     <div class="row" id="deskQR"></div>
     <div class="urlbox" id="deskUrl"></div>
     <div class="row"><button id="deskCopy">Copy link</button></div>
@@ -117,6 +122,8 @@
     <details class="chk"><summary>What should the screenshots be?</summary><ol id="upList"></ol></details>
     <div class="row"><label class="btn primary big">Choose screenshots<input type="file" id="bulk" accept="image/*" multiple></label></div>
     <div class="words" id="upInfo" style="color:#9a9a9a"></div>
+    <div class="words" style="font-size:15px;margin-top:14px"><b>Optional: app icon.</b> A screenshot of your home screen with the Calculator icon visible. You mark the icon and it becomes this app's icon. Skip it and a plain icon is used.</div>
+    <div class="row"><label class="btn">Choose home screen screenshot<input type="file" id="iconFile" accept="image/*"></label><span id="iconState" style="color:#9a9a9a;font-size:13px"></span></div>
     <div class="row"><label style="font-size:13px;color:#9a9a9a">Order by <select id="sortmode"><option value="time">time taken</option><option value="name">file name</option></select></label></div>
     <div class="row sp"><button class="big" id="upBack">Back</button><button class="primary big" id="upNext" disabled>Check them</button></div>
   </div>
@@ -172,6 +179,24 @@
   </div>
   </div>
 </main>
+<div class="modal hi" id="guideModal"><div>
+  <div style="font-weight:700;font-size:18px">Add this to your home screen first</div>
+  <div class="warnbox"><b>This step really matters.</b> The app only looks and works properly when it is opened from the home screen. If you skip it, you will have more work to do later, because you will have to redo the setup.</div>
+  <ol id="guideSteps"></ol>
+  <div class="sub" style="color:#bbb">Then close this tab and open the new icon on your home screen. Do the setup from there, so everything stays in one place.</div>
+  <button class="primary" id="guideOk" style="margin-top:14px">Got it</button>
+  <button id="guideSkip" style="color:#9a9a9a">Skip for now (not recommended)</button>
+</div></div>
+<div class="modal hi" id="iconModal"><div>
+  <div style="font-weight:700;font-size:17px">Mark the Calculator icon</div>
+  <p class="sub" style="margin:6px 0">Tap or drag on the picture to move the square onto the icon. Use the slider to make the square fit just inside the icon.</p>
+  <canvas id="icCv" style="width:auto;max-width:100%;max-height:54vh;touch-action:none;background:#000;border-radius:8px;display:block;margin:0 auto"></canvas>
+  <input type="range" id="icSize" min="6" max="40" value="16" style="width:100%;margin-top:10px">
+  <div class="row" style="align-items:center"><canvas id="icPrev" width="90" height="90" style="width:90px;height:90px;border-radius:20px"></canvas><span class="sub" style="color:#9a9a9a">This is how the icon will look</span></div>
+  <button class="primary" id="icUse">Use this icon</button>
+  <button id="icCancel">Cancel</button>
+</div></div>
+<input type="file" id="iconPick" accept="image/*" style="display:none">
 <div id="calcWrap"><iframe id="calcFrame" title="Calculator"></iframe></div>
 <div id="menu"><div class="inner" id="menuBody"></div></div>
 <script>// Copyright (c) 2009 Kazuhiko Arase
@@ -331,6 +356,7 @@ function goUp() {
   $('#upList').innerHTML = expected().map(k => `<li>${esc(SLOTS[k].title)}</li>`).join('');
   $('#upInfo').textContent = W.uploaded.length ? `${W.uploaded.length} selected.` : '';
   $('#upNext').disabled = !W.uploaded.length;
+  kvGet('icon').then(v => { $('#iconState').textContent = v ? 'Icon saved ✓' : ''; }).catch(() => {});
 }
 function assign() {
   const al = expected(); al.forEach(i => files[i] = null);
@@ -927,6 +953,73 @@ async function afterBuild() {
 }
 $('#resBack').onclick = () => { if (calcHtml) showCalc(calcHtml); else show('s-sum'); };
 
+
+/* ---- app icon (home screen) ---- */
+function setIcon(u) {
+  let l = document.querySelector('link[rel="apple-touch-icon"]');
+  if (!l) { l = document.createElement('link'); l.rel = 'apple-touch-icon'; document.head.appendChild(l); }
+  l.href = u; const i = document.querySelector('link[rel="icon"]'); if (i) i.href = u;
+}
+function genericIcon() {
+  const c = document.createElement('canvas'); c.width = c.height = 180; const x = c.getContext('2d');
+  x.fillStyle = '#1b1b1d'; x.fillRect(0, 0, 180, 180);
+  [[55, 55, '#a5a5a5'], [125, 55, '#3a3a3c'], [55, 125, '#3a3a3c'], [125, 125, '#ff9f0a']].forEach(([cx, cy, col]) => { x.fillStyle = col; x.beginPath(); x.arc(cx, cy, 30, 0, 7); x.fill(); });
+  return c.toDataURL('image/png');
+}
+setIcon(genericIcon());
+const IC = { img: null, cx: .5, cy: .5, s: .16 };
+function icBox() { const w = IC.img.width, h = IC.img.height, sz = Math.min(IC.s * w, w, h); const x = Math.max(0, Math.min(w - sz, IC.cx * w - sz / 2)), y = Math.max(0, Math.min(h - sz, IC.cy * h - sz / 2)); return { x, y, sz }; }
+function icOut(N) {
+  const c = document.createElement('canvas'); c.width = c.height = N; const x = c.getContext('2d'), b = icBox(), ins = b.sz * .08;
+  x.fillStyle = '#000'; x.fillRect(0, 0, N, N); x.imageSmoothingQuality = 'high';
+  x.drawImage(IC.img, b.x + ins, b.y + ins, b.sz - 2 * ins, b.sz - 2 * ins, 0, 0, N, N); return c;
+}
+function icDraw() {
+  const cv = $('#icCv'), im = IC.img, k = Math.min(1, 700 / im.width); cv.width = Math.round(im.width * k); cv.height = Math.round(im.height * k);
+  const x = cv.getContext('2d'); x.drawImage(im, 0, 0, cv.width, cv.height);
+  const b = icBox(); x.fillStyle = 'rgba(0,0,0,.55)'; x.fillRect(0, 0, cv.width, cv.height);
+  x.drawImage(im, b.x, b.y, b.sz, b.sz, b.x * k, b.y * k, b.sz * k, b.sz * k);
+  x.strokeStyle = '#f09a37'; x.lineWidth = Math.max(2, cv.width / 200); x.strokeRect(b.x * k, b.y * k, b.sz * k, b.sz * k);
+  const pv = $('#icPrev').getContext('2d'); pv.clearRect(0, 0, 90, 90); pv.drawImage(icOut(90), 0, 0);
+}
+function openIcon(file) {
+  if (!file) return; const u = URL.createObjectURL(file), im = new Image();
+  im.onload = () => { IC.img = im; IC.cx = .5; IC.cy = .5; IC.s = .16; $('#icSize').value = 16; $('#iconModal').classList.add('on'); icDraw(); };
+  im.onerror = () => alert('That file could not be opened as a picture.'); im.src = u;
+}
+(function () {
+  const cv = $('#icCv'); let down = false;
+  const mv = e => { const r = cv.getBoundingClientRect(); IC.cx = (e.clientX - r.left) / r.width; IC.cy = (e.clientY - r.top) / r.height; icDraw(); };
+  cv.onpointerdown = e => { down = true; try { cv.setPointerCapture(e.pointerId); } catch (x) {} mv(e); }; cv.onpointermove = e => { if (down) mv(e); }; cv.onpointerup = cv.onpointercancel = () => { down = false; };
+  $('#icSize').oninput = e => { IC.s = +e.target.value / 100; icDraw(); };
+  $('#icCancel').onclick = () => $('#iconModal').classList.remove('on');
+  $('#icUse').onclick = async () => {
+    const u = icOut(180).toDataURL('image/png'); setIcon(u); try { await kvSet('icon', u); } catch (e) {}
+    $('#iconModal').classList.remove('on'); $('#iconState').textContent = 'Icon saved ✓'; try { $('#mIconNote').textContent = 'Icon saved ✓'; } catch (e) {}
+  };
+  $('#iconFile').onchange = e => { openIcon(e.target.files[0]); e.target.value = ''; };
+  $('#iconPick').onchange = e => { openIcon(e.target.files[0]); e.target.value = ''; };
+})();
+
+/* ---- add to home screen guide ---- */
+function browserKind() {
+  const u = navigator.userAgent, ios = /iPhone|iPad|iPod/.test(u) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (ios) return /CriOS|FxiOS|EdgiOS|OPiOS/.test(u) ? 'iosOther' : 'iosSafari';
+  return /Android/.test(u) ? 'android' : 'other';
+}
+function guideSteps() {
+  const k = browserKind();
+  if (k === 'iosSafari') return ['Tap the <b>Share</b> button (a square with an arrow pointing up) in the browser bar.', 'Scroll down and tap <b>Add to Home Screen</b>.', 'If you see a switch called <b>Open as Web App</b>, leave it on. Tap <b>Add</b>.'];
+  if (k === 'iosOther') return ['Tap the <b>Share</b> button (a square with an arrow pointing up) in the browser bar. If this browser has no Add to Home Screen option, open this link in Safari instead and do it there.', 'Tap <b>Add to Home Screen</b>.', 'If you see a switch called <b>Open as Web App</b>, leave it on. Tap <b>Add</b>.'];
+  if (k === 'android') return ['Tap the browser menu (three dots).', 'Tap <b>Add to Home screen</b> or <b>Install app</b>.', 'Confirm with <b>Add</b> or <b>Install</b>.'];
+  return ['Open your browser menu.', 'Choose <b>Add to Home Screen</b> (or <b>Install</b>).', 'Confirm.'];
+}
+function showGuide() { $('#guideSteps').innerHTML = guideSteps().map(t => `<li>${t}</li>`).join(''); $('#guideModal').classList.add('on'); }
+function closeGuide() { $('#guideModal').classList.remove('on'); try { localStorage.setItem('calcguide', '1'); } catch (e) {} }
+$('#guideOk').onclick = closeGuide; $('#guideSkip').onclick = closeGuide;
+$('#guideLink').onclick = e => { e.preventDefault(); showGuide(); };
+function ccLink() { return 'webapp://' + location.host + location.pathname; }
+
 /* ---- secret menu (two-finger swipe down on the calculator) ---- */
 const thumbURL = {};
 const turl = i => thumbURL[i] || (thumbURL[i] = URL.createObjectURL(files[i]));
@@ -958,6 +1051,10 @@ function renderMenu(view, arg) {
       <div class="msec">Build</div>
       <button class="wide" id="mDetails">Build details</button>
       <button class="wide" id="mSave">Save a copy of the calculator (index.html)</button>
+      <div class="msec">Home screen</div>
+      <button class="wide" id="mGuide">How to add this to the home screen</button>
+      <button class="wide" id="mCC">Add the calculator to Control Center</button>
+      <button class="wide" id="mIcon">Choose the app icon from a screenshot</button><div class="sub" id="mIconNote" style="color:#9a9a9a"></div>
       <div class="msec">Danger</div>
       <button class="wide" id="mReset">Start over and erase everything</button>
       <div class="row" style="margin-top:24px"><button class="primary big" id="mClose">Back to calculator</button></div>`;
@@ -975,6 +1072,7 @@ function renderMenu(view, arg) {
     const tsh = $('#tShift'); if (tsh) { tsh.oninput = e => { TRICK.shift = +e.target.value; $('#tShiftV').textContent = e.target.value; saveTrick(); pvDraw(); }; $('#tSize').oninput = e => { TRICK.size = +e.target.value; $('#tSizeV').textContent = e.target.value; saveTrick(); pvDraw(); }; pvDraw(); }
     done('tTest', () => { try { $('#calcFrame').contentWindow.__testMarks(); } catch (e) {} hideMenu(); });
     const ta = $('#tAns'); if (ta) ta.oninput = e => { TRICK.answer = e.target.value.replace(/[^0-9.,-]/g, ''); saveTrick(); };
+    done('mGuide', () => showGuide()); done('mCC', () => renderMenu('cc')); done('mIcon', () => $('#iconPick').click());
     done('mClose', hideMenu); done('mList', () => renderMenu('list')); done('mDetails', () => renderMenu('details'));
     done('mRedo', () => { hideMenu(); leaveCalc(); W.skipped = {}; W.retake = false; W.marks = {}; W.uploaded = []; $('main').classList.remove('boot'); W.list = SLOTS.map((_, i) => i); goCap(0); });
     done('mSave', () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([calcHtml], { type: 'text/html' })); a.download = 'index.html'; document.body.appendChild(a); a.click(); a.remove(); });
@@ -999,6 +1097,17 @@ function renderMenu(view, arg) {
     const sm = $('#mSmall'); if (sm) sm.oninput = e => { SLOTS[i].small = e.target.value; dirty = true; };
     const li = $('#mLim'); if (li) li.oninput = e => { SLOTS[i].limit = e.target.value.replace(/\D/g, ''); dirty = true; };
     $('#mFile').onchange = e => { const f = e.target.files[0]; if (!f) return; files[i] = f; delete thumbURL[i]; dirty = true; renderMenu('detail', i); };
+  } else if (view === 'cc') {
+    const link = ccLink(), ok = location.protocol === 'https:' || location.protocol === 'http:';
+    m.innerHTML = `<div class="row sp"><button id="mBack">Back</button></div><h2 style="margin-top:6px">Add to Control Center</h2>
+      <div class="sub" style="color:#9a9a9a">This makes a Shortcut that opens the calculator, then puts it in Control Center so you can open it with one swipe and tap.</div>
+      ${ok ? `<div class="msec">1. Copy this link</div><div class="linkbox" id="ccLink">${esc(link)}</div><div class="row"><button class="primary" id="ccCopy">Copy link</button></div>` : `<div class="warnbox">This copy of the page is not running from a web address, so there is no link to copy. Open the calculator from its web address and come back here.</div>`}
+      <div class="msec">2. Make the Shortcut</div>
+      <ol class="guidesteps"><li>Open the <b>Shortcuts</b> app and tap <b>+</b> to make a new shortcut.</li><li>Tap <b>Add Action</b>, search for <b>Open URLs</b>, and tap it.</li><li>Tap the <b>URL</b> field and paste the link you copied.</li><li>Tap the name at the top and call it <b>Calculator</b>. Tap <b>Done</b>.</li></ol>
+      <div class="msec">3. Put it in Control Center</div>
+      <ol class="guidesteps"><li>Swipe down from the top right corner of the screen to open Control Center.</li><li>Tap the <b>+</b> at the top left, then <b>Add a Control</b>.</li><li>Search for <b>Shortcuts</b>, then choose your <b>Calculator</b> shortcut.</li><li>Tap an empty spot to finish.</li></ol>`;
+    done('mBack', () => renderMenu('home'));
+    done('ccCopy', async () => { const b = $('#ccCopy'); try { await navigator.clipboard.writeText(link); b.textContent = 'Copied'; } catch (e) { const r = document.createRange(); r.selectNodeContents($('#ccLink')); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); b.textContent = 'Press and hold the link to copy it'; } });
   } else if (view === 'details') {
     const md = window.__savedMeta || {};
     m.innerHTML = `<div class="row sp"><button id="mBack">Back</button></div><h2 style="margin-top:6px">Build details</h2><div class="sub" style="color:#9a9a9a">${esc(devInfo())}</div><pre>${esc(md.log || '')}</pre><table>${md.diag || ''}</table>`;
@@ -1009,10 +1118,13 @@ function renderMenu(view, arg) {
 /* ---- boot: open straight into the saved calculator if there is one ---- */
 function desktopIntro() {
   document.querySelector('#s-intro .words').innerHTML = 'This page shows every screenshot you will need, one at a time, so you can follow along on a computer.<br>When you reach the end, you finish the setup on your phone, where you take the screenshots and upload them.';
-  document.querySelector('#s-intro .words + .words').style.display = 'none'; $('#introTip').style.display = 'none'; $('#skipWalk').parentNode.style.display = 'none'; $('#resumeBtn').style.display = 'none'; $('#startBtn').textContent = 'Show me the steps';
+  document.querySelector('#s-intro .words + .words').style.display = 'none'; $('#introTip').style.display = 'none'; $('#skipWalk').parentNode.style.display = 'none'; $('#guideRow').style.display = 'none'; $('#resumeBtn').style.display = 'none'; $('#startBtn').textContent = 'Show me the steps';
 }
 (async function boot() {
   if (IS_DESKTOP) { desktopIntro(); $('main').classList.remove('boot'); return; }
+  try { const ic = await kvGet('icon'); if (ic) setIcon(ic); } catch (e) {}
+  let seen = false; try { seen = !!localStorage.getItem('calcguide'); } catch (e) {}
+  if (!isStandalone() && !seen && !/[?&]noguide=1/.test(location.search)) showGuide();
   const had = await loadSaved();
   if (had) { const up = recompose(calcHtml); if (up !== calcHtml) { calcHtml = up; try { await kvSet('html', up); } catch (e) {} } showCalc(calcHtml); } else $('main').classList.remove('boot');
 })();
