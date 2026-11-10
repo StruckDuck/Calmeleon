@@ -97,7 +97,7 @@
   <div class="screen" id="s-desk">
     <div class="kick">All done here</div>
     <div class="stepTitle">Complete the setup on your phone</div>
-    <div class="words" id="deskWords">Open this page on your phone, take the screenshots, and upload them there. Scan this to open it. There is also one optional extra on the phone: a screenshot of your home screen showing the Calculator icon, which becomes the app icon.</div>
+    <div class="words" id="deskWords">Open this page on your phone, take the screenshots, and upload them there. Scan this to open it. On the phone you will also be offered an optional first step: a screenshot of your home screen showing the Calculator icon, which becomes the app icon.</div>
     <div class="row" id="deskQR"></div>
     <div class="urlbox" id="deskUrl"></div>
     <div class="row"><button id="deskCopy">Copy link</button></div>
@@ -122,8 +122,6 @@
     <details class="chk"><summary>What should the screenshots be?</summary><ol id="upList"></ol></details>
     <div class="row"><label class="btn primary big">Choose screenshots<input type="file" id="bulk" accept="image/*" multiple></label></div>
     <div class="words" id="upInfo" style="color:#9a9a9a"></div>
-    <div class="words" style="font-size:15px;margin-top:14px"><b>Optional: app icon.</b> A screenshot of your home screen with the Calculator icon visible. You mark the icon and it becomes this app's icon. Skip it and a plain icon is used.</div>
-    <div class="row"><label class="btn">Choose home screen screenshot<input type="file" id="iconFile" accept="image/*"></label><span id="iconState" style="color:#9a9a9a;font-size:13px"></span></div>
     <div class="row"><label style="font-size:13px;color:#9a9a9a">Order by <select id="sortmode"><option value="time">time taken</option><option value="name">file name</option></select></label></div>
     <div class="row sp"><button class="big" id="upBack">Back</button><button class="primary big" id="upNext" disabled>Check them</button></div>
   </div>
@@ -179,6 +177,13 @@
   </div>
   </div>
 </main>
+<div class="modal hi" id="iconStart"><div>
+  <div style="font-weight:700;font-size:18px">Make your app icon</div>
+  <p class="sub" style="margin:8px 0;line-height:1.45">Optional. Take a screenshot of your home screen with the Calculator icon showing, come back here, and choose it. You mark the icon and it becomes this app's icon. Do it now, because the icon is set at the moment you add the app to your home screen.</p>
+  <div class="row"><label class="btn primary">Choose home screen screenshot<input type="file" id="iconFile" accept="image/*"></label></div>
+  <div class="sub" id="iconState" style="color:#9a9a9a;min-height:18px"></div>
+  <button id="iconGo">Skip, use a plain icon</button>
+</div></div>
 <div class="modal hi" id="guideModal"><div>
   <div style="font-weight:700;font-size:18px">Add this to your home screen first</div>
   <div class="warnbox"><b>This step really matters.</b> The app only looks and works properly when it is opened from the home screen. If you skip it, you will have more work to do later, because you will have to redo the setup.</div>
@@ -186,17 +191,18 @@
   <div class="sub" style="color:#bbb">Then close this tab and open the new icon on your home screen. Do the setup from there, so everything stays in one place.</div>
   <button class="primary" id="guideOk" style="margin-top:14px">Got it</button>
   <button id="guideSkip" style="color:#9a9a9a">Skip for now (not recommended)</button>
+  <div style="margin-top:10px"><a href="#" id="guideIcon" style="color:#9a9a9a;font-size:14px">Change the app icon</a></div>
 </div></div>
 <div class="modal hi" id="iconModal"><div>
   <div style="font-weight:700;font-size:17px">Mark the Calculator icon</div>
   <p class="sub" style="margin:6px 0">Tap or drag on the picture to move the square onto the icon. Use the slider to make the square fit just inside the icon.</p>
-  <canvas id="icCv" style="width:auto;max-width:100%;max-height:54vh;touch-action:none;background:#000;border-radius:8px;display:block;margin:0 auto"></canvas>
+  <canvas id="icCv" style="width:auto;max-width:100%;max-height:44vh;touch-action:none;background:#000;border-radius:8px;display:block;margin:0 auto"></canvas>
   <input type="range" id="icSize" min="6" max="40" value="16" style="width:100%;margin-top:10px">
+  <div class="row" style="align-items:center;margin-bottom:0"><span class="sub" style="color:#9a9a9a">Secret dot</span><select id="icDot"><option value="br">Bottom right</option><option value="bl">Bottom left</option><option value="tr">Top right</option><option value="tl">Top left</option><option value="bc">Bottom middle</option><option value="none">None</option></select></div>
   <div class="row" style="align-items:center"><canvas id="icPrev" width="90" height="90" style="width:90px;height:90px;border-radius:20px"></canvas><span class="sub" style="color:#9a9a9a">This is how the icon will look</span></div>
   <button class="primary" id="icUse">Use this icon</button>
   <button id="icCancel">Cancel</button>
 </div></div>
-<input type="file" id="iconPick" accept="image/*" style="display:none">
 <div id="calcWrap"><iframe id="calcFrame" title="Calculator"></iframe></div>
 <div id="menu"><div class="inner" id="menuBody"></div></div>
 <script>// Copyright (c) 2009 Kazuhiko Arase
@@ -356,7 +362,6 @@ function goUp() {
   $('#upList').innerHTML = expected().map(k => `<li>${esc(SLOTS[k].title)}</li>`).join('');
   $('#upInfo').textContent = W.uploaded.length ? `${W.uploaded.length} selected.` : '';
   $('#upNext').disabled = !W.uploaded.length;
-  kvGet('icon').then(v => { $('#iconState').textContent = v ? 'Icon saved ✓' : ''; }).catch(() => {});
 }
 function assign() {
   const al = expected(); al.forEach(i => files[i] = null);
@@ -972,7 +977,15 @@ function icBox() { const w = IC.img.width, h = IC.img.height, sz = Math.min(IC.s
 function icOut(N) {
   const c = document.createElement('canvas'); c.width = c.height = N; const x = c.getContext('2d'), b = icBox(), ins = b.sz * .08;
   x.fillStyle = '#000'; x.fillRect(0, 0, N, N); x.imageSmoothingQuality = 'high';
-  x.drawImage(IC.img, b.x + ins, b.y + ins, b.sz - 2 * ins, b.sz - 2 * ins, 0, 0, N, N); return c;
+  x.drawImage(IC.img, b.x + ins, b.y + ins, b.sz - 2 * ins, b.sz - 2 * ins, 0, 0, N, N);
+  const pos = ($('#icDot') || {}).value || 'none';
+  if (pos !== 'none') {
+    const m = .14, cxy = { br: [1 - m, 1 - m], bl: [m, 1 - m], tr: [1 - m, m], tl: [m, m], bc: [.5, 1 - m] }[pos], px = cxy[0] * N, py = cxy[1] * N, r = Math.max(1, N * .017), q = Math.max(2, Math.round(r * 3));
+    const d = x.getImageData(Math.max(0, Math.round(px - q)), Math.max(0, Math.round(py - q)), q * 2, q * 2).data; let L = 0, n = 0; for (let i = 0; i < d.length; i += 4) { L += (d[i] + d[i + 1] + d[i + 2]) / 3; n++; } L /= n;
+    const dl = L < 128 ? 26 : -26, avg = [0, 1, 2].map(k => { let t = 0, c2 = 0; for (let i = k; i < d.length; i += 4) { t += d[i]; c2++; } return Math.max(0, Math.min(255, Math.round(t / c2 + dl))); }); x.fillStyle = `rgb(${avg.join(',')})`;
+    x.beginPath(); x.arc(px, py, r, 0, 7); x.fill();
+  }
+  return c;
 }
 function icDraw() {
   const cv = $('#icCv'), im = IC.img, k = Math.min(1, 700 / im.width); cv.width = Math.round(im.width * k); cv.height = Math.round(im.height * k);
@@ -992,13 +1005,14 @@ function openIcon(file) {
   const mv = e => { const r = cv.getBoundingClientRect(); IC.cx = (e.clientX - r.left) / r.width; IC.cy = (e.clientY - r.top) / r.height; icDraw(); };
   cv.onpointerdown = e => { down = true; try { cv.setPointerCapture(e.pointerId); } catch (x) {} mv(e); }; cv.onpointermove = e => { if (down) mv(e); }; cv.onpointerup = cv.onpointercancel = () => { down = false; };
   $('#icSize').oninput = e => { IC.s = +e.target.value / 100; icDraw(); };
+  try { const sv = localStorage.getItem('calcdot'); if (sv) $('#icDot').value = sv; } catch (e) {}
+  $('#icDot').onchange = e => { try { localStorage.setItem('calcdot', e.target.value); } catch (x) {} icDraw(); };
   $('#icCancel').onclick = () => $('#iconModal').classList.remove('on');
   $('#icUse').onclick = async () => {
     const u = icOut(180).toDataURL('image/png'); setIcon(u); try { await kvSet('icon', u); } catch (e) {}
-    $('#iconModal').classList.remove('on'); $('#iconState').textContent = 'Icon saved ✓'; try { $('#mIconNote').textContent = 'Icon saved ✓'; } catch (e) {}
+    $('#iconModal').classList.remove('on'); $('#iconState').textContent = 'Icon saved ✓'; $('#iconStart').classList.remove('on'); showGuide();
   };
   $('#iconFile').onchange = e => { openIcon(e.target.files[0]); e.target.value = ''; };
-  $('#iconPick').onchange = e => { openIcon(e.target.files[0]); e.target.value = ''; };
 })();
 
 /* ---- add to home screen guide ---- */
@@ -1018,6 +1032,9 @@ function showGuide() { $('#guideSteps').innerHTML = guideSteps().map(t => `<li>$
 function closeGuide() { $('#guideModal').classList.remove('on'); try { localStorage.setItem('calcguide', '1'); } catch (e) {} }
 $('#guideOk').onclick = closeGuide; $('#guideSkip').onclick = closeGuide;
 $('#guideLink').onclick = e => { e.preventDefault(); showGuide(); };
+async function showIconStart() { let has = false; try { has = !!(await kvGet('icon')); } catch (e) {} $('#iconState').textContent = has ? 'Icon saved ✓' : ''; $('#iconGo').textContent = has ? 'Continue with the saved icon' : 'Skip, use a plain icon'; $('#iconStart').classList.add('on'); }
+$('#iconGo').onclick = () => { $('#iconStart').classList.remove('on'); showGuide(); };
+$('#guideIcon').onclick = e => { e.preventDefault(); $('#guideModal').classList.remove('on'); showIconStart(); };
 function ccLink() { return 'webapp://' + location.host + location.pathname; }
 
 /* ---- secret menu (two-finger swipe down on the calculator) ---- */
@@ -1054,7 +1071,6 @@ function renderMenu(view, arg) {
       <div class="msec">Home screen</div>
       <button class="wide" id="mGuide">How to add this to the home screen</button>
       <button class="wide" id="mCC">Add the calculator to Control Center</button>
-      <button class="wide" id="mIcon">Choose the app icon from a screenshot</button><div class="sub" id="mIconNote" style="color:#9a9a9a"></div>
       <div class="msec">Danger</div>
       <button class="wide" id="mReset">Start over and erase everything</button>
       <div class="row" style="margin-top:24px"><button class="primary big" id="mClose">Back to calculator</button></div>`;
@@ -1072,7 +1088,7 @@ function renderMenu(view, arg) {
     const tsh = $('#tShift'); if (tsh) { tsh.oninput = e => { TRICK.shift = +e.target.value; $('#tShiftV').textContent = e.target.value; saveTrick(); pvDraw(); }; $('#tSize').oninput = e => { TRICK.size = +e.target.value; $('#tSizeV').textContent = e.target.value; saveTrick(); pvDraw(); }; pvDraw(); }
     done('tTest', () => { try { $('#calcFrame').contentWindow.__testMarks(); } catch (e) {} hideMenu(); });
     const ta = $('#tAns'); if (ta) ta.oninput = e => { TRICK.answer = e.target.value.replace(/[^0-9.,-]/g, ''); saveTrick(); };
-    done('mGuide', () => showGuide()); done('mCC', () => renderMenu('cc')); done('mIcon', () => $('#iconPick').click());
+    done('mGuide', () => showGuide()); done('mCC', () => renderMenu('cc'));
     done('mClose', hideMenu); done('mList', () => renderMenu('list')); done('mDetails', () => renderMenu('details'));
     done('mRedo', () => { hideMenu(); leaveCalc(); W.skipped = {}; W.retake = false; W.marks = {}; W.uploaded = []; $('main').classList.remove('boot'); W.list = SLOTS.map((_, i) => i); goCap(0); });
     done('mSave', () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([calcHtml], { type: 'text/html' })); a.download = 'index.html'; document.body.appendChild(a); a.click(); a.remove(); });
@@ -1124,7 +1140,7 @@ function desktopIntro() {
   if (IS_DESKTOP) { desktopIntro(); $('main').classList.remove('boot'); return; }
   try { const ic = await kvGet('icon'); if (ic) setIcon(ic); } catch (e) {}
   let seen = false; try { seen = !!localStorage.getItem('calcguide'); } catch (e) {}
-  if (!isStandalone() && !seen && !/[?&]noguide=1/.test(location.search)) showGuide();
+  if (!isStandalone() && !seen && !/[?&]noguide=1/.test(location.search)) showIconStart();
   const had = await loadSaved();
   if (had) { const up = recompose(calcHtml); if (up !== calcHtml) { calcHtml = up; try { await kvSet('html', up); } catch (e) {} } showCalc(calcHtml); } else $('main').classList.remove('boot');
 })();
