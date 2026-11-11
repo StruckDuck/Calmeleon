@@ -1221,7 +1221,7 @@ function renderMenu(view, arg) {
   if (view === 'home') {
     m.innerHTML = `<h1 style="margin-top:0">Menu</h1>
       <details class="sec" data-sec="trick"${M_OPEN.trick ? ' open' : ''}><summary>Trick options</summary>
-      <div class="row" style="flex-wrap:wrap">${[['off', 'Off'], ['bluff', 'Bwuff'], ['nines', 'mmmmmmmmm fudge'], ['finisher', 'Buff Bwuff'], ['secret', 'Cardinal Knowledge'], ['extra', 'EXTRA!!']].map(([k, l]) => `<button class="${TRICK.mode === k ? 'primary' : ''}" data-tm="${k}">${l}</button>`).join('')}</div>
+      <div class="row" style="flex-wrap:wrap">${[['off', 'Off'], ['bluff', 'Bwuff'], ['nines', 'mmmmmmmmm fudge'], ['finisher', 'Buff Bwuff'], ['secret', 'Soggy Worms'], ['extra', 'EXTRA!!']].map(([k, l]) => `<button class="${TRICK.mode === k ? 'primary' : ''}" data-tm="${k}">${l}</button>`).join('')}</div>
       ${TAGS[TRICK.mode] ? `<div style="margin-top:10px;font-weight:600;color:#fff">${TAGS[TRICK.mode]}</div>` : ''}
       ${TRICK.mode === 'bluff' || TRICK.mode === 'finisher' ? `<div class="sub" style="color:#9a9a9a;margin-top:8px">${TRICK.mode === 'bluff' ? 'The answer to show when = is tapped' : 'The number the total should end on'}</div><input class="field" id="tAns" inputmode="decimal" value="${esc(TRICK.answer)}" autocomplete="off" style="width:100%;box-sizing:border-box">` : ''}
       ${TRICK.mode === 'extra' ? (() => {
