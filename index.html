@@ -1206,7 +1206,7 @@ function secretModesPanel() {
         <div class="sub" style="color:#9a9a9a;margin-top:10px">Same key at its real size</div><canvas id="pvB" style="display:block;margin-top:4px"></canvas>
         <div class="sub" id="pvT" style="color:#9a9a9a"></div><div class="row"><button id="tTest">Show a test pattern (12345678)</button></div>`;
     }
-    h += `<div class="sub" style="color:#9a9a9a;margin-top:8px">${TRICK.mode === 'nerd' ? '' : TRICK.mode === 'nines' ? 'When equals is tapped one digit of any whole-number total of 10 or more is changed so its digits add up to a multiple of 9.' : 'After completing an equation and memorizing the answer the spectator clears the screen with the AC button. You can now find the answer by looking at the number pad.<br><br>On the number pad each digit in their total now has a very small dot around the edge of the button. The placement of this dot shows you where in the total that digit appears. Only the first 8 digits of a total get a dot. The spots stay until you switch the mode off, which clears them.'}<br><br>Tap the display with two fingers to switch the currently selected trick mode on or off. When the current trick mode is on, the hands of the clock on the history button in the top left hand corner of the screen tilt to the left. Each time the calculator opens, the current trick mode is set to off.</div>`;
+    h += `<div class="sub" style="color:#9a9a9a;margin-top:8px">${TRICK.mode === 'nerd' ? '' : TRICK.mode === 'nines' ? 'When equals is tapped one digit of any whole-number total of 10 or more is changed so its digits add up to a multiple of 9.' : 'After completing an equation and memorizing the answer the spectator clears the screen with the AC button. You can now find the answer by looking at the number pad.<br><br>On the number pad each digit in their total now has a very small dot around the edge of the button. The placement of this dot shows you where in the total that digit appears. Only the first 8 digits of a total get a dot. The spots stay until you switch the mode off, which clears them.'}<br><br>Tap the display with two fingers to arm or disarm the mode. When armed, the hands of the clock on the history button in the top left tilt to the left. The calculator always opens unarmed.</div>`;
     if (TRICK.mode === 'secret') h += wormsDiagram();
     if (TRICK.mode === 'nerd') h += `<div class="sub" style="color:#9a9a9a;margin-top:8px">Build a formula from the answer and the numbers in the equation. Its result is shown instead of the real answer.</div><div id="nbWrap"></div>`;
   }
@@ -1283,7 +1283,7 @@ function renderMenu(view, arg) {
         }
         return out;
       })() : ''}
-      <div class="sub" style="color:#9a9a9a;margin-top:8px">${TRICK.mode === 'off' ? 'No trick selected.' : 'When armed, the hands of the clock on the history button in the top left tilt to the left. Each time the calculator opens, it resets to off.'}</div>
+      <div class="sub" style="color:#9a9a9a;margin-top:8px">When armed, the hands of the clock on the history button in the top left tilt to the left. The calculator always opens unarmed.</div>
       ${TRICK.mode === 'finisher' ? buffGuide() : ''}
       </details><details class="sec" data-sec="shots"${M_OPEN.shots ? ' open' : ''}><summary>Screenshots</summary>
       <button class="wide" id="mList">Review and edit screenshots${dirty ? ' (changes waiting)' : ''}</button>
