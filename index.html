@@ -1304,18 +1304,16 @@ function renderMenu(view, arg) {
         if (!useDT) {
           out += `<div class="sub" style="color:#9a9a9a;margin-top:8px">The answer that shows when equals is tapped</div><input class="field" id="tAns" inputmode="decimal" value="${esc(TRICK.answer)}" autocomplete="off" style="width:100%;box-sizing:border-box">`;
         } else {
-          const show = X('xShow', 'date'), isD = show === 'date', src = isD ? X('xDateSrc', 'now') : X('xTimeSrc', 'now');
+          const show = X('xShow', 'date'), isD = show === 'date';
           let pv = ''; try { pv = $('#calcFrame').contentWindow.__extraPreview(Object.assign({ xShow: 'date', xDateSrc: 'now', xTimeSrc: 'now', xFmt: 'us', xYear: 4, xClock: 12, xDelay: 0 }, TRICK)); } catch (e) { pv = '(close and reopen the app to update it)'; }
           out += `<div class="sub" style="color:#9a9a9a;margin-top:8px">Show</div><div class="row">${btn('xShow', 'date', 'Date', 'date')}${btn('xShow', 'time', 'Time', 'date')}</div>
-          <div class="sub" style="color:#9a9a9a">${isD ? 'Date' : 'Time'} to use</div><div class="row">${btn(isD ? 'xDateSrc' : 'xTimeSrc', 'now', 'Current', 'now')}${btn(isD ? 'xDateSrc' : 'xTimeSrc', 'typed', 'Type it', 'now')}</div>
-          ${src === 'typed' ? (isD ? `<div class="row"><input class="field" type="date" id="xDate" value="${esc(X('xDateTyped', ''))}"></div>` : `<div class="row"><input class="field" type="time" id="xTime" value="${esc(X('xTimeTyped', ''))}"></div>`) : `<div class="sub" style="color:#9a9a9a">Minutes ahead (0 for right now)</div><div class="row"><input class="field" id="xDelay" inputmode="numeric" value="${esc(String(X('xDelay', 0)))}" style="width:90px"></div>`}
+          ${!isD ? `<div class="sub" style="color:#9a9a9a">Minutes ahead (0 for right now)</div><div class="row"><input class="field" id="xDelay" inputmode="numeric" value="${esc(String(X('xDelay', 0)))}" style="width:90px"></div>` : ''}
           ${isD ? `<div class="sub" style="color:#9a9a9a">Format</div><div class="row">${btn('xFmt', 'us', 'Month, Day, Year', 'us')}${btn('xFmt', 'uk', 'Day, Month, Year', 'us')}</div><div class="sub" style="color:#9a9a9a">Year format</div><div class="row">${btn('xYear', 4, '4 digits', 4)}${btn('xYear', 2, '2 digits', 4)}</div>` : `<div class="sub" style="color:#9a9a9a">Clock format</div><div class="row">${btn('xClock', 12, '12-hour', 12)}${btn('xClock', 24, '24-hour', 12)}</div>`}
           <div class="sub" style="color:#9a9a9a;margin-top:6px">Right now it would show: <b style="color:#fff">${esc(pv)}</b></div>`;
         }
         return out;
       })() : ''}
       <div class="sub" style="color:#9a9a9a;margin-top:8px">${TRICK.mode === 'off' ? 'No trick selected.' : 'Once this mode is activated, no matter what keys are tapped, the screen will fill in the number that combines with the other numbers on screen to equal the predetermined answer.'}${TRICK.mode !== 'off' ? '<br><br>Tap the display with two fingers to switch the currently selected trick mode on or off. When the current trick mode is on, the hands of the clock on the history button in the top left hand corner of the screen tilt to the left. Each time the calculator opens, the current trick mode is set to off.' : ''}</div>
-      ${TRICK.mode === 'finisher' ? buffGuide(!!TRICK.xBuff) : ''}
       </details><details class="sec" data-sec="shots"${M_OPEN.shots ? ' open' : ''}><summary>Screenshots</summary>
       <button class="wide" id="mList">Review and edit screenshots${dirty ? ' (changes waiting)' : ''}</button>
       <button class="wide" id="mRedo">Redo the guided screenshot steps</button>
@@ -1333,8 +1331,6 @@ function renderMenu(view, arg) {
     m.querySelectorAll('[data-tm]').forEach(b => b.onclick = () => { TRICK.mode = b.dataset.tm; saveTrick(); renderMenu('home'); });
     m.querySelectorAll('[data-xk]').forEach(b => b.onclick = () => { const k = b.dataset.xk, v = b.dataset.xv; TRICK[k] = (k === 'xYear' || k === 'xClock') ? +v : k === 'xBuff' ? !!v : v; saveTrick(); renderMenu('home'); });
     m.querySelectorAll('[data-sg]').forEach(b => b.onclick = () => { TRICK[b.dataset.sg] = b.dataset.sg === 'sugCount' ? +b.dataset.sv : b.dataset.sv; saveTrick(); renderMenu('home'); });
-    const xd = $('#xDate'); if (xd) xd.onchange = e => { TRICK.xDateTyped = e.target.value; saveTrick(); renderMenu('home'); };
-    const xt = $('#xTime'); if (xt) xt.onchange = e => { TRICK.xTimeTyped = e.target.value; saveTrick(); renderMenu('home'); };
     const xy = $('#xDelay'); if (xy) xy.onchange = e => { TRICK.xDelay = Math.max(-1440, Math.min(1440, Math.round(+e.target.value) || 0)); saveTrick(); renderMenu('home'); };
     const ta = $('#tAns'); if (ta) ta.onchange = e => { TRICK.answer = e.target.value.replace(/[^0-9.,-]/g, ''); saveTrick(); renderMenu('home'); }; if (ta) ta.oninput = e => { TRICK.answer = e.target.value.replace(/[^0-9.,-]/g, ''); saveTrick(); };
     done('mGuide', () => showGuide()); done('mCC', () => renderMenu('cc'));
