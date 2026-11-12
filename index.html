@@ -945,7 +945,7 @@ function devInfo() {
   const w = $('#calcWrap').getBoundingClientRect();
   return `Screen ${screen.width}x${screen.height}, window ${innerWidth}x${innerHeight}, safe bottom ${sab}, home screen mode ${isStandalone()}, calculator area ${Math.round(w.width)}x${Math.round(w.height)}`;
 }
-const TAGS = { finisher: 'Force any equation to show a predetermined answer, and they can even check the math.', secret: 'Peek the last total after it has been cleared.', nines: 'Any total follows the rule of 9s.' };
+const TAGS = { finisher: 'Force any equation to show a chosen answer, and they can even check the math.', secret: 'Peek the last total after it has been cleared.', nines: 'Any total follows the rule of 9s.' };
 let TRICK = { mode: 'off', answer: '' };
 try { const t = JSON.parse(localStorage.getItem('calctrick') || 'null'); if (t && t.mode) TRICK = t; } catch (e) {}
 function pushTrick() { try { $('#calcFrame').contentWindow.__setTrick(TRICK); } catch (e) {} }
@@ -1210,6 +1210,7 @@ function secretModesPanel() {
     if (TRICK.mode === 'secret') h += wormsDiagram();
     if (TRICK.mode === 'nerd') h += `<div class="sub" style="color:#9a9a9a;margin-top:8px">Build a formula from the answer and the numbers in the equation. Its result is shown instead of the real answer.</div><div id="nbWrap"></div>`;
   }
+  h += `<div class="msec" style="margin-top:20px">Build</div><button class="wide" id="mDetails">Build details</button><button class="wide" id="mSave">Save a copy of the calculator (index.html)</button>`;
   return h;
 }
 function luckyPage() {
@@ -1239,56 +1240,25 @@ function isJ(pts) {
   m.addEventListener('touchend', end, { passive: true }); m.addEventListener('touchcancel', () => { pts = null; }, { passive: true });
   m.addEventListener('mousedown', e => start(e.clientX, e.clientY)); m.addEventListener('mousemove', e => { if (e.buttons) move(e.clientX, e.clientY); }); m.addEventListener('mouseup', end);
 })();
-/* ---- Buff modes: How to perform it ---- */
-function buffGuide(useDateTime) {
-  const R = useDateTime ? 'the date or time' : 'the predetermined result';
-  const P = t => `<p style="margin:8px 0">${t}</p>`, H = t => `<div style="font-weight:600;color:#fff;margin-top:14px">${t}</div>`;
-  return `<details class="exp guide"><summary>How to perform it</summary><div class="sub" style="color:#bdbdbd">
-    ${P(useDateTime ? 'Choose the date or time above, then go back to the calculator.' : 'Enter your number above, then go back to the calculator.')}
-    ${H('Effect')}${P(`Your spectator begins by entering a number of their choice, preferably a number significant to them, such as a birth year, etc. After a series of truly random calculations, you are able to predict the final result.`)}
-    ${H('What it looks like')}${P(`The spectator begins by adding, multiplying, and/or subtracting together their birth year, their street number, height, number of siblings, or some other significant numbers. These numbers truly are their free choice. Once a few numbers have been entered, you tell them that they are going to add or subtract a truly random number. Ask them to hold up a single finger and use it to randomly tap the numbers while the phone is held screen-down. When they are finished they can see what they typed and press the equals key (=). The total matches ${useDateTime ? 'the date or time' : 'your prediction'}, and they can even check the math!`)}
-    ${H('How it works')}${P('After their numbers are in, switch the mode on by tapping the display with two fingers.')}
-    ${P('Once activated, the number pad will show a very faint dot at the North position on two keys.')}
-    ${P('You will see a dot on either the add or subtract key. This dot tells you whether the last number needs to be added or subtracted from the current total.')}
-    ${P('You will also see a dot on one of the number keys. This one tells you how many digits the last number is going to be.')}
-    ${P(`Once activated, you must press either the add or subtract key (whichever is indicated) before the phone is turned over. From this point, every tap on the number area actually registers as the next digit of the last number needed to produce ${R}. Extra taps once the required digits have been entered do nothing. Hitting equals (=) ends the sequence and shows ${R}.`)}
-    ${P('Until the last digit is in, equals types a digit like any other key. Glance at the number before they press it: it should have as many digits as the dot on the number key showed.')}
-    ${P('If the other key is pressed (the one without the dot), the last number fills in as a negative number. The math still works, but it takes some explaining.')}
-    ${P('Deactivate the mode by tapping the display with 2 fingers again.')}
-    ${P(`Note: In the extremely rare case that their chosen numbers already equal ${useDateTime ? 'the date or time' : 'your predetermined number'} you will see dots at North, South, East and West on the equals (=) key.`)}
-    ${P('The size and contrast of the indicator dots can be adjusted from Soggy Worms in the secret menu.')}
+/* ---- Settings mode: How this works ---- */
+function buffGuide() {
+  const P = t => `<p style="margin:8px 0">${t}</p>`;
+  return `<details class="exp guide"><summary>How this works</summary><div class="sub" style="color:#bdbdbd">
+    ${P('Tap the display with two fingers to arm override mode. While armed, multiply and divide always work like a normal calculator. The override starts the next time you press add or subtract.')}
+    ${P('From there, the app watches everything already entered and works out the one number that, added or subtracted, makes the total equal your target.')}
+    ${P('Two dots show you two things about that number. One sits on the add or subtract key, whichever is needed. The other sits on a number key, showing how many digits it has.')}
+    ${P('Press the add/subtract key with the dot. From there, every tap in the number area fills in the next digit, in order, no matter which key is tapped. Extra taps once the digits are in do nothing. Equals ends the sequence.')}
+    ${P('If the wrong add/subtract key is pressed, the number fills in negative. Since the +/- key sits right there on the number pad, a quick "oh, looks like you hit the negative sign" covers it.')}
+    ${P('If the total already matches before the override starts, you\'ll see dots on all four sides of the equals key instead.')}
+    ${P('Tap the display with two fingers again to switch it off.')}
   </div></details>`;
-}
-/* ---- Buff modes: suggested digit lengths ---- */
-const dg = n => String(Math.floor(Math.abs(n))).length, fmt = n => Math.round(n).toLocaleString('en-US');
-function bSuggest(T, style, n) {
-  T = Math.round(Math.abs(T)); if (!(T >= 10)) return 'The target is too small to suggest digit lengths. Use small numbers.';
-  if (style === 'mul') {
-    const dp = dg(Math.round(T * .65)), da = Math.max(1, Math.ceil(dp / 2)), db = Math.max(1, Math.floor(dp / 2)), lo = Math.ceil(T * .5), hi = Math.floor(T * .8), fl = dg(T - hi), fh = dg(T - lo);
-    return `Ask for a ${da}-digit number times a ${db}-digit number, then add. Keep the product between ${fmt(lo)} and ${fmt(hi)}. The filled-in number comes out as ${fl === fh ? fl : fl + ' to ' + fh} digits. Multiplied numbers cannot match the last one's length, so this aims for a sensible size.`;
-  }
-  n = Math.max(2, Math.min(5, n | 0 || 3));
-  for (let L = dg(Math.round(T / n)); L >= 1; L--) {
-    const lo = Math.max(Math.pow(10, L - 1), Math.ceil((T - (Math.pow(10, L) - 1)) / (n - 1))), hi = Math.min(Math.pow(10, L) - 1, Math.floor((T - Math.pow(10, L - 1)) / (n - 1)));
-    if (lo <= hi) return `Ask for ${n - 1} number${n > 2 ? 's' : ''} of ${L} digit${L > 1 ? 's' : ''} to add, ${n > 2 ? 'each ' : ''}between ${fmt(lo)} and ${fmt(hi)}. The filled-in number then comes out as ${L} digit${L > 1 ? 's' : ''} too.`;
-  }
-  return 'The target is too small for that many numbers. Try fewer.';
-}
-function sugBlock() {
-  let T = NaN;
-  if (TRICK.mode === 'finisher') T = parseFloat(String(TRICK.answer || '').replace(/[,\s]/g, ''));
-  else { try { T = parseFloat(String($('#calcFrame').contentWindow.__extraPreview(Object.assign({ xShow: 'date', xDateSrc: 'now', xTimeSrc: 'now', xFmt: 'us', xYear: 4, xClock: 12, xDelay: 0 }, TRICK))).replace(/,/g, '')); } catch (e) {} }
-  const st = TRICK.sugStyle === 'mul' ? 'mul' : 'add', n = TRICK.sugCount || 3, b = (k, v, l, on) => `<button class="${on ? 'primary' : ''}" data-sg="${k}" data-sv="${v}">${l}</button>`;
-  return `<div class="msec">Suggested setup</div><div class="row">${b('sugStyle', 'add', 'Add', st === 'add')}${b('sugStyle', 'mul', 'Multiply', st === 'mul')}</div>
-    ${st === 'add' ? `<div class="sub" style="color:#9a9a9a">How many numbers will they enter, counting the one that fills in?</div><div class="row">${[2, 3, 4, 5].map(k => b('sugCount', k, k, n === k)).join('')}</div>` : ''}
-    <div class="nh" style="margin-top:6px;color:#fff">${isFinite(T) ? esc(bSuggest(T, st, n)) : 'Type your number above to get a suggestion.'}</div>`;
 }
 
 /* ---- secret menu (two-finger swipe down on the calculator) ---- */
 const thumbURL = {};
 const turl = i => thumbURL[i] || (thumbURL[i] = URL.createObjectURL(files[i]));
 function hideMenu() { $('#menu').classList.remove('on'); }
-const M_OPEN = { trick: true, shots: false, build: false, home: false, danger: false };
+const M_OPEN = { trick: true, shots: false, home: false, danger: false };
 function openMenu() { renderMenu('home'); $('#menu').classList.add('on'); $('#menu').scrollTop = 0; }
 function renderMenu(view, arg) {
   const m = $('#menuBody'); const done = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
@@ -1302,7 +1272,7 @@ function renderMenu(view, arg) {
         const useDT = !!X('xBuff', false);
         let out = `<div class="sub" style="color:#9a9a9a;margin-top:8px">Target</div><div class="row"><button class="${!useDT ? 'primary' : ''}" data-xk="xBuff" data-xv="">Number</button><button class="${useDT ? 'primary' : ''}" data-xk="xBuff" data-xv="1">Date/Time</button></div>`;
         if (!useDT) {
-          out += `<div class="sub" style="color:#9a9a9a;margin-top:8px">The answer that shows when equals is tapped</div><input class="field" id="tAns" inputmode="decimal" value="${esc(TRICK.answer)}" autocomplete="off" style="width:100%;box-sizing:border-box">`;
+          out += `<div class="sub" style="color:#9a9a9a;margin-top:8px">The answer that shows when equals is tapped</div><input class="field" id="tAns" inputmode="decimal" value="${esc(TRICK.answer)}" autocomplete="off" style="width:100%;box-sizing:border-box"><div class="sub" style="color:#9a9a9a;font-style:italic;margin-top:4px">a prediction, a card's position, a page number...</div>`;
         } else {
           const show = X('xShow', 'date'), isD = show === 'date';
           let pv = ''; try { pv = $('#calcFrame').contentWindow.__extraPreview(Object.assign({ xShow: 'date', xDateSrc: 'now', xTimeSrc: 'now', xFmt: 'us', xYear: 4, xClock: 12, xDelay: 0 }, TRICK)); } catch (e) { pv = '(close and reopen the app to update it)'; }
@@ -1313,13 +1283,11 @@ function renderMenu(view, arg) {
         }
         return out;
       })() : ''}
-      <div class="sub" style="color:#9a9a9a;margin-top:8px">${TRICK.mode === 'off' ? 'No trick selected.' : 'Once this mode is activated, no matter what keys are tapped, the screen will fill in the number that combines with the other numbers on screen to equal the predetermined answer.'}${TRICK.mode !== 'off' ? '<br><br>Tap the display with two fingers to switch the currently selected trick mode on or off. When the current trick mode is on, the hands of the clock on the history button in the top left hand corner of the screen tilt to the left. Each time the calculator opens, the current trick mode is set to off.' : ''}</div>
+      <div class="sub" style="color:#9a9a9a;margin-top:8px">${TRICK.mode === 'off' ? 'No trick selected.' : 'When armed, the hands of the clock on the history button in the top left tilt to the left. Each time the calculator opens, it resets to off.'}</div>
+      ${TRICK.mode === 'finisher' ? buffGuide() : ''}
       </details><details class="sec" data-sec="shots"${M_OPEN.shots ? ' open' : ''}><summary>Screenshots</summary>
       <button class="wide" id="mList">Review and edit screenshots${dirty ? ' (changes waiting)' : ''}</button>
       <button class="wide" id="mRedo">Redo the guided screenshot steps</button>
-      </details><details class="sec" data-sec="build"${M_OPEN.build ? ' open' : ''}><summary>Build</summary>
-      <button class="wide" id="mDetails">Build details</button>
-      <button class="wide" id="mSave">Save a copy of the calculator (index.html)</button>
       </details><details class="sec" data-sec="home"${M_OPEN.home ? ' open' : ''}><summary>Home screen</summary>
       <button class="wide" id="mGuide">How to add this to the home screen</button>
       <button class="wide" id="mCC">Add the calculator to Control Center</button>
@@ -1334,9 +1302,8 @@ function renderMenu(view, arg) {
     const xy = $('#xDelay'); if (xy) xy.onchange = e => { TRICK.xDelay = Math.max(-1440, Math.min(1440, Math.round(+e.target.value) || 0)); saveTrick(); renderMenu('home'); };
     const ta = $('#tAns'); if (ta) ta.onchange = e => { TRICK.answer = e.target.value.replace(/[^0-9.,-]/g, ''); saveTrick(); renderMenu('home'); }; if (ta) ta.oninput = e => { TRICK.answer = e.target.value.replace(/[^0-9.,-]/g, ''); saveTrick(); };
     done('mGuide', () => showGuide()); done('mCC', () => renderMenu('cc'));
-    done('mClose', hideMenu); done('mList', () => renderMenu('list')); done('mDetails', () => renderMenu('details'));
+    done('mClose', hideMenu); done('mList', () => renderMenu('list'));
     done('mRedo', () => { hideMenu(); leaveCalc(); W.skipped = {}; W.retake = false; W.marks = {}; W.uploaded = []; $('main').classList.remove('boot'); W.list = SLOTS.map((_, i) => i); goCap(0); });
-    done('mSave', () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([calcHtml], { type: 'text/html' })); a.download = 'index.html'; document.body.appendChild(a); a.click(); a.remove(); });
     done('mReset', async () => { if (!confirm('Erase the calculator and all screenshots from this device?')) return; try { await kvClear(); localStorage.removeItem('calcbuilder'); } catch (e) {} location.reload(); });
   } else if (view === 'list') {
     m.innerHTML = `<div class="row sp"><button id="mBack">Back</button>${dirty ? '<button class="primary" id="mRebuild">Rebuild calculator</button>' : ''}</div><h2 style="margin-top:6px">Screenshots</h2>` +
@@ -1366,6 +1333,8 @@ function renderMenu(view, arg) {
     const pvDraw = () => { if (!$('#pvA')) return; try { const w = $('#calcFrame').contentWindow; if (typeof w.__previewMarks !== 'function') { $('#pvT').textContent = 'This saved calculator is out of date. Close the app and reopen it.'; return; } const r = w.__previewMarks($('#pvA'), $('#pvB'), TRICK.shift || 22, TRICK.size || 2.5); if (r) { $('#pvB').style.width = (r.width * w.innerWidth) + 'px'; $('#pvT').textContent = `Key colour ${r.key.join(',')}, mark colour ${r.px.join(',')}`; } else $('#pvT').textContent = 'Preview not ready yet, close and reopen the menu.'; } catch (e) { $('#pvT').textContent = 'Preview error: ' + e.message; } };
     const tsh = $('#tShift'); if (tsh) { tsh.oninput = e => { TRICK.shift = +e.target.value; $('#tShiftV').textContent = e.target.value; saveTrick(); pvDraw(); }; $('#tSize').oninput = e => { TRICK.size = +e.target.value; $('#tSizeV').textContent = e.target.value; saveTrick(); pvDraw(); }; pvDraw(); }
     done('tTest', () => { try { $('#calcFrame').contentWindow.__testMarks(); } catch (e) {} hideMenu(); });
+    done('mDetails', () => renderMenu('details'));
+    done('mSave', () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([calcHtml], { type: 'text/html' })); a.download = 'index.html'; document.body.appendChild(a); a.click(); a.remove(); });
   } else if (view === 'cc') {
     const link = ccLink(), ok = location.protocol === 'https:' || location.protocol === 'http:';
     m.innerHTML = `<div class="row sp"><button id="mBack">Back</button></div><h2 style="margin-top:6px">Add to Control Center</h2>
@@ -1380,7 +1349,7 @@ function renderMenu(view, arg) {
   } else if (view === 'details') {
     const md = window.__savedMeta || {};
     m.innerHTML = `<div class="row sp"><button id="mBack">Back</button></div><h2 style="margin-top:6px">Build details</h2><div class="sub" style="color:#9a9a9a">${esc(devInfo())}</div><pre>${esc(md.log || '')}</pre><table>${md.diag || ''}</table>`;
-    done('mBack', () => renderMenu('home'));
+    done('mBack', () => renderMenu('lucky'));
   }
 }
 
