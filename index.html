@@ -966,8 +966,8 @@ async function build() {
         for (const k in lKeyBox) { lRestCrops[k] = cropRGBA(limg, lKeyBox[k].x, lKeyBox[k].y, lkw, lkh); lKinds[k] = keyKind(lRestCrops[k]); }
         const lStates = {};
         const putL = (name, crop) => {
-          const d = new Uint8ClampedArray(crop.data), w = crop.w, h = crop.h, rx = w / 2 + 1, ry = h / 2 + 1;
-          for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const dx = (x + .5 - w / 2) / rx, dy = (y + .5 - h / 2) / ry; const r2 = Math.sqrt(dx * dx + dy * dy); const a = Math.max(0, Math.min(1, (1 - r2) * rx * 1.0 + .5)); d[(y * w + x) * 4 + 3] = Math.round(a * 255); }
+          const d = new Uint8ClampedArray(crop.data), w = crop.w, h = crop.h, feather = 10;
+          for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const edge = Math.min(x + .5, w - x - .5, y + .5, h - y - .5); const a = Math.max(0, Math.min(1, edge / feather)); d[(y * w + x) * 4 + 3] = Math.round(a * 255); }
           lStates[name] = rgbaToB64(w, h, d);
         };
         // real held-key photos (lh1-lh4), same technique as portrait's h1-h4: auto-detect which key changed, then
