@@ -246,6 +246,7 @@ const SLOTS = [
   { id:'h4', type:'held', title:'Hold a finger on =', how:'Screenshot with your other hand while holding.' },
   { id:'lrest', type:'lrest', group:'Landscape', title:'Resting calculator, landscape', how:'Rotate your phone sideways. Open Calculator showing 0 (tap AC if needed).', text:'0' },
   (() => { const o = num('lr1','Type 1 ÷ 3 then tap =, landscape','Stay rotated sideways. The small grey line above the result is read from this one too.','0.3333333333'); o.small = '1÷3'; o.v = 'rep'; o.type = 'lnum'; o.group = 'Landscape'; return o; })(),
+  { id:'lc1', type:'lc1', group:'Landscape', title:'Type any digit, landscape', how:'Stay rotated sideways. Clear with AC, then type a digit (don’t press =). AC should now show as C. Screenshot before pressing anything else.', text:'6' },
 ];
 const IDX = id => SLOTS.findIndex(x => x.id === id);
 const isT = s => /^t\d$/.test(s.id);
@@ -266,7 +267,7 @@ const files = new Array(SLOTS.length).fill(null);
 function renderSlots() {}
 const KEYS = { rest:'AC', l1:'1 2 3 4 5 6 7 8 9', l2:'1 2 3 4 5 6 7 8 9 0 1', max:'1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1', d3:'1 2 3 4 . 5 6 7 8',
   o1:'5 + 2 - 3 * 4 / 1', n1:'5 neg', n2:'5 + 3 neg', p1:'5 0 %', r1:'1 / 3 =', s1:'1 2 3 4 5 6 7 8 9 1 * 1 0 =', s2:'1 / 3 0 0 0 0 0 0 0 0 0 =', r2:'5 / 0 =', h1:'hold:7', h2:'hold:AC', h3:'hold:/', h4:'hold:=',
-  lrest:'AC', lr1:'1 / 3 =' };
+  lrest:'AC', lr1:'1 / 3 =', lc1:'6' };
 const keysFor = s => (isT(s) && s.text) ? Array.from(s.text).join(' ') : KEYS[s.id] || ((s.title.match(/\d{6,}/) || [''])[0].split('').join(' '));
 const TOKWORD = { '+':'+', '-':'−', '*':'×', '/':'÷', '=':'=', neg:'+/−', back:'⌫', '%':'%', '.':'. (the dot)', AC:'AC' };
 const TOKLAB = { '+':'+', '-':'−', '*':'×', '/':'÷', neg:'±', back:'⌫' };
@@ -276,6 +277,7 @@ function wordsFor(s) {
   if (s.id === 'max') return 'Open Calculator and keep tapping 1 until the left side of the number fades out or it stops accepting digits. Take a screenshot.';
   if (s.id === 'lrest') return 'Rotate your phone sideways so Calculator is in landscape. Tap AC until it shows 0. Take a screenshot.';
   if (s.id === 'lr1') return 'Stay rotated sideways. Clear with AC, then tap 1, then ÷, then 3, then =. Take a screenshot.';
+  if (s.id === 'lc1') return 'Stay rotated sideways. Clear with AC, then tap a digit (don’t tap =). AC should now show as C. Take a screenshot.';
   if (k[0].startsWith('hold:')) { const t = k[0].slice(5); return `Press and hold the ${TOKWORD[t] || t} key. While you keep holding it, take a screenshot with your other hand. ${s.id === 'h2' ? 'The display should show 0.' : ''}`; }
   const list = k.map(t => TOKWORD[t] || t).join(', then ');
   const noEq = !k.includes('=');
@@ -284,7 +286,7 @@ function wordsFor(s) {
   if (s.id === 'l1' || s.id === 'l2') w = `Open Calculator and clear it with AC. Type ${k.join('')}. ${s.how || ''} Take a screenshot.`;
   return w;
 }
-const shouldFor = s => s.type === 'rest' ? 'The calculator showing 0.' : s.type === 'held' ? 'A key looks lighter because it is being held down.' : s.type === 'max' ? 'A long row of 1s with the left side faded out.' : s.type === 'lrest' ? 'The calculator showing 0, rotated sideways.' : null;
+const shouldFor = s => s.type === 'rest' ? 'The calculator showing 0.' : s.type === 'held' ? 'A key looks lighter because it is being held down.' : s.type === 'max' ? 'A long row of 1s with the left side faded out.' : s.type === 'lrest' ? 'The calculator showing 0, rotated sideways.' : s.type === 'lc1' ? 'A digit showing, with AC now reading as C, rotated sideways.' : null;
 
 /* ---- saved state ---- */
 const W = { phase: 'intro', step: 0, list: SLOTS.map((_, i) => i), skipped: {}, marks: {}, uploaded: [], vi: 0, retake: false, streakFrom: 0 };
@@ -660,7 +662,7 @@ async function build() {
   const heldRaw = []; let cCrop = null;
   for (let i = 0; i < SLOTS.length; i++) {
     const S = SLOTS[i]; if (!files[i]) continue;
-    if (S.type === 'lrest' || S.type === 'lnum') continue; // landscape screenshots: not analyzed yet, kept on file for later
+    if (S.type === 'lrest' || S.type === 'lnum' || S.type === 'lc1') continue; // landscape screenshots: not analyzed yet, kept on file for later
     const img = i === 0 ? rest : await loadImg(files[i]);
     if (img.W !== W || img.H !== H) { setStatus(i, 'bad', `size ${img.W}x${img.H} differs from the resting screenshot`); log(`Slot ${i + 1} (${S.title}): wrong size ${img.W}x${img.H}, skipped.`); continue; }
     const rec = { i, S };
@@ -965,10 +967,21 @@ async function build() {
           lStates[name] = rgbaToB64(w, h, d);
         };
         for (const k in lKeyBox) putL(k + '_pressed', brighten(lRestCrops[k], lKinds[k] === 'orange' ? .35 : .22));
-        // the "C" label (shown mid-entry instead of "AC") never appears in landscape's own screenshots, since both only
-        // show the AC state; borrow portrait's "C" glyph shape, rescaled to landscape's own measured key-label size
-        // (measured from how big "AC" renders in each orientation's own screenshot), and draw it onto landscape's real AC key.
-        if (cCrop && lRestCrops.ac) {
+        // the "C" label (shown mid-entry instead of "AC") never appears in landscape's resting/lr1 screenshots, since both
+        // only show the AC state. Prefer a real landscape screenshot of it (slot lc1) when given; otherwise fall back to
+        // borrowing portrait's "C" glyph shape, rescaled to landscape's own measured key-label size.
+        const iC1 = IDX('lc1');
+        let lcCrop = null;
+        if (files[iC1]) {
+          const lcImg = await loadImg(files[iC1]);
+          if (lcImg.W !== LW || lcImg.H !== LH) log(`  landscape "C" screenshot is ${lcImg.W}x${lcImg.H}, the resting one is ${LW}x${LH}; skipped it and estimated the C key instead.`);
+          else lcCrop = cropRGBA(lcImg, lKeyBox.ac.x, lKeyBox.ac.y, lkw, lkh);
+        }
+        if (lcCrop) {
+          lStates['c_idle'] = rgbaToB64(lkw, lkh, lcCrop.data);
+          putL('c_pressed', brighten(lcCrop, .22));
+          log('  landscape "C" key: used your screenshot directly.');
+        } else if (cCrop && lRestCrops.ac) {
           const lAcAlpha = labelAlpha(lRestCrops.ac, lKinds.ac);
           const pBox = alphaBBox(alphas.ac.alpha, alphas.ac.w, alphas.ac.h), lBox = alphaBBox(lAcAlpha.alpha, lAcAlpha.w, lAcAlpha.h);
           if (pBox && lBox) {
@@ -980,7 +993,7 @@ async function build() {
             const lCIdle = composeLabel(lAcClean, rescaled);
             lStates['c_idle'] = rgbaToB64(lkw, lkh, lCIdle.data);
             putL('c_pressed', brighten(lCIdle, .22));
-            log(`  landscape "C" key label: reused portrait's shape at ${KLR.toFixed(3)}x scale (measured from "AC")`);
+            log(`  landscape "C" key label: no lc1 screenshot given, estimated from portrait's shape at ${KLR.toFixed(3)}x scale.`);
           } else log('  could not isolate the "C"/"AC" label shapes; the landscape AC key will keep showing "AC" even mid-entry.');
         }
 
