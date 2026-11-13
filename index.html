@@ -965,9 +965,17 @@ async function build() {
         const lRestCrops = {}, lKinds = {};
         for (const k in lKeyBox) { lRestCrops[k] = cropRGBA(limg, lKeyBox[k].x, lKeyBox[k].y, lkw, lkh); lKinds[k] = keyKind(lRestCrops[k]); }
         const lStates = {};
+        // landscape keys are a stadium (pill): straight sides with a true semicircular cap (radius = h/2) at each end,
+        // not a plain rectangle. Feathering against that curve (instead of against the 4 straight box edges) keeps the
+        // fade following the button's actual rounded ends instead of cutting across them.
         const putL = (name, crop) => {
-          const d = new Uint8ClampedArray(crop.data), w = crop.w, h = crop.h, feather = 10;
-          for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const edge = Math.min(x + .5, w - x - .5, y + .5, h - y - .5); const a = Math.max(0, Math.min(1, edge / feather)); d[(y * w + x) * 4 + 3] = Math.round(a * 255); }
+          const d = new Uint8ClampedArray(crop.data), w = crop.w, h = crop.h, r = h / 2, feather = 8;
+          for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+            const cx = Math.max(r, Math.min(w - r, x + .5)), dx = (x + .5) - cx, dy = (y + .5) - h / 2;
+            const distIn = r - Math.sqrt(dx * dx + dy * dy);
+            const a = Math.max(0, Math.min(1, distIn / feather));
+            d[(y * w + x) * 4 + 3] = Math.round(a * 255);
+          }
           lStates[name] = rgbaToB64(w, h, d);
         };
         // real held-key photos (lh1-lh4), same technique as portrait's h1-h4: auto-detect which key changed, then
