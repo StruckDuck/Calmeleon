@@ -6,8 +6,14 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Calculator">
 <link rel="icon" href="data:,"><title>Calculator</title>
+<script>
+// iOS 26 and later lay a full-screen Home Screen app out one status bar short of the screen (WebKit bug 301108).
+// A page that is at least as tall as the whole screen gets the full height, so mark Home Screen mode early.
+try { if (navigator.standalone || matchMedia('(display-mode: standalone)').matches) document.documentElement.classList.add('fsapp'); } catch (e) {}
+</script>
 <style>
   :root{color-scheme:dark}
+  html.fsapp,html.fsapp body{min-height:100vh;min-height:100lvh}
   body{margin:0;font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#111;color:#e8e8e8}
   main{max-width:980px;margin:0 auto;padding:20px 16px 80px}
   h1{font-size:22px;margin:0 0 4px} h2{font-size:16px;margin:28px 0 8px;color:#fff}
