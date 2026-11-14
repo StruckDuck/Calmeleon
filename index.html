@@ -2,23 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="apple-mobile-web-app-title" content="Calculator">
 <link rel="icon" href="data:,"><title>Calculator</title>
-<script>
-// iOS 26 and later lay a full-screen Home Screen app out one status bar short of the screen (WebKit bug 301108).
-// A page that is at least as tall as the whole screen gets the full height, so mark Home Screen mode early.
-try { if (navigator.standalone || matchMedia('(display-mode: standalone)').matches) { document.documentElement.classList.add('fsapp'); document.documentElement.dataset.fh = localStorage.getItem('calcfh2') || 'A'; } } catch (e) {}
-</script>
 <style>
   :root{color-scheme:dark}
-  html{touch-action:manipulation}
-  input,select,textarea{font-size:max(16px,1em)}
-  /* page-height rules being tried for the iOS Home Screen short-window bug; A is no rule */
-  html[data-fh="B"],html[data-fh="B"] body{min-height:100vh;min-height:100lvh}
-  html[data-fh="C"]{min-height:min(100lvh,calc(100% + env(safe-area-inset-top)))!important}
-  html[data-fh="D"],html[data-fh="D"] body{height:100vh!important;height:100lvh!important}
-  html[data-fh="E"],html[data-fh="E"] body{min-height:100vh;min-height:100lvh}
   body{margin:0;font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#111;color:#e8e8e8}
   main{max-width:980px;margin:0 auto;padding:20px 16px 80px}
   h1{font-size:22px;margin:0 0 4px} h2{font-size:16px;margin:28px 0 8px;color:#fff}
@@ -2077,25 +2065,13 @@ async function loadSaved() {
 }
 function isStandalone() { return !!(navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches)); }
 function fitCalc() {
-  // Home Screen mode can report a viewport a little shorter than the screen (the home-indicator strip), which leaves a gap. Use the full screen height there.
-  const w = $('#calcWrap'); let H = window.innerHeight; const full = Math.max(screen.height || 0, screen.width || 0);
-  if (isStandalone() && full > H && full - H <= 120) H = full;
-  w.style.height = H + 'px';
+  // iOS 26 Home Screen apps can get a window one status bar shorter than the screen (WebKit bug 301108), which leaves a strip at the bottom.
+  // Measure that gap and make the calculator as tall as the whole screen, shifted up by the gap, so it fills the screen on any phone.
+  const w = $('#calcWrap'); const H = window.innerHeight; const full = Math.max(screen.height || 0, screen.width || 0);
+  let gap = 0; if (isStandalone() && full > H && full - H <= 120 && innerHeight > innerWidth) gap = full - H;
+  w.style.top = (-gap) + 'px'; w.style.height = (H + gap) + 'px';
 }
 addEventListener('resize', () => fitCalc()); addEventListener('orientationchange', () => setTimeout(fitCalc, 200));
-function fhApply() {
-  const h = document.documentElement; if (h.dataset.fh !== 'E') return;
-  const gap = Math.max(0, (screen.height || 0) - innerHeight);
-  try { scrollTo(0, Math.max(scrollY, 0) + (gap && scrollY < gap ? gap - scrollY : 0)); } catch (e) {}
-}
-addEventListener('load', () => setTimeout(fhApply, 300)); addEventListener('resize', () => setTimeout(fhApply, 100));
-function fhReadings() {
-  const vv = window.visualViewport, de = document.documentElement.getBoundingClientRect(), mk = pos => { const d = document.createElement('div'); d.style.cssText = `position:fixed;left:0;width:1px;height:1px;${pos}`; document.body.appendChild(d); const r = d.getBoundingClientRect(); d.remove(); return Math.round(r.top * 10) / 10; };
-  const r = v => Math.round(v * 10) / 10;
-  const hp = u => { const d = document.createElement('div'); d.style.cssText = `position:fixed;left:0;width:1px;visibility:hidden;height:${u}`; document.body.appendChild(d); const x = d.getBoundingClientRect().height; d.remove(); return Math.round(x * 10) / 10; };
-  const sp = (() => { const d = document.createElement('div'); d.style.cssText = 'position:fixed;visibility:hidden;padding-top:env(safe-area-inset-top)'; document.body.appendChild(d); const x = parseFloat(getComputedStyle(d).paddingTop) || 0; d.remove(); return x; })();
-  return `100lvh ${hp('100lvh')}, 100svh ${hp('100svh')}, 100dvh ${hp('100dvh')}, 100vh ${hp('100vh')}, status bar (safe top) ${sp}; page scrolled by ${r(scrollY)}; rule ${document.documentElement.dataset.fh || 'none'}; window height ${innerHeight}; visible area ${vv ? r(vv.height) : '?'}, starts ${vv ? r(vv.offsetTop) : '?'} down, page scrolled ${r(vv ? vv.pageTop : scrollY)}; page box top ${r(de.top)}, height ${r(de.height)}; a box pinned to the bottom edge sits at ${mk('bottom:0')}; pinned to the top edge at ${mk('top:0')}`;
-}
 function devInfo() {
   const p = document.createElement('div'); p.style.cssText = 'position:fixed;visibility:hidden;padding-bottom:env(safe-area-inset-bottom)'; document.body.appendChild(p); const sab = getComputedStyle(p).paddingBottom; p.remove();
   const w = $('#calcWrap').getBoundingClientRect();
@@ -2555,17 +2531,8 @@ function renderMenu(view, arg) {
     done('ccCopy', async () => { const b = $('#ccCopy'); try { await navigator.clipboard.writeText(link); b.textContent = 'Copied'; } catch (e) { const r = document.createRange(); r.selectNodeContents($('#ccLink')); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); b.textContent = 'Press and hold the link to copy it'; } });
   } else if (view === 'details') {
     const md = window.__savedMeta || {};
-    const FH = [['A', 'A: no rule'], ['B', 'B: page at least screen tall'], ['C', 'C: screen tall, plus status bar'], ['D', 'D: page exactly screen tall'], ['E', 'E: like B, scrolled up by the gap']], fhNow = document.documentElement.dataset.fh || '(not in Home Screen mode)';
-    m.innerHTML = `<div class="row sp"><button id="mBack">Back</button></div><h2 style="margin-top:6px">Build details</h2><div class="sub" style="color:#9a9a9a">${esc(devInfo())}</div>
-      <div class="msec" style="margin-top:14px">Page height rule (testing)</div>
-      <div class="row" style="flex-wrap:wrap">${FH.map(([k, l]) => `<button class="${fhNow === k ? 'primary' : ''}" data-fh="${k}">${l}</button>`).join('')}</div>
-      <div class="sub" style="color:#9a9a9a;margin-top:6px">${esc(fhReadings())}</div><pre>${esc(md.log || '')}</pre><table>${md.diag || ''}</table>`;
+    m.innerHTML = `<div class="row sp"><button id="mBack">Back</button></div><h2 style="margin-top:6px">Build details</h2><div class="sub" style="color:#9a9a9a">${esc(devInfo())}</div><pre>${esc(md.log || '')}</pre><table>${md.diag || ''}</table>`;
     done('mBack', () => renderMenu('lucky'));
-    m.querySelectorAll('[data-fh]').forEach(b => b.onclick = () => {
-      if (!document.documentElement.classList.contains('fsapp')) return;
-      document.documentElement.dataset.fh = b.dataset.fh; try { localStorage.setItem('calcfh2', b.dataset.fh); } catch (e) {}
-      fitCalc(); setTimeout(fhApply, 100); setTimeout(() => renderMenu('details'), 350);
-    });
   }
 }
 
