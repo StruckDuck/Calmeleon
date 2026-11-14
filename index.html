@@ -2101,15 +2101,16 @@ function devInfo() {
 }
 const TAGS = { finisher: 'Force any equation to show a chosen answer, and they can even check the math.', secret: 'Peek the last total after it has been cleared.', nines: 'Any total follows the rule of 9s.' };
 let hasLandscape = false;
-let TRICK = { mode: 'off', answer: '' };
+let TRICK = { mode: 'finisher', answer: '' };
 try { const t = JSON.parse(localStorage.getItem('calctrick') || 'null'); if (t && t.mode) TRICK = t; } catch (e) {}
+if (TRICK.mode === 'off') TRICK.mode = 'finisher';
 function ensureTargets() {
   if (!Array.isArray(TRICK.xTargets) || !TRICK.xTargets.length) TRICK.xTargets = [TRICK.answer || ''];
   if (!Number.isInteger(TRICK.xIdx) || TRICK.xIdx < 0 || TRICK.xIdx >= TRICK.xTargets.length) TRICK.xIdx = 0;
 }
 function pushTrick() { try { $('#calcFrame').contentWindow.__setTrick(TRICK); } catch (e) {} }
 function saveTrick() { try { localStorage.setItem('calctrick', JSON.stringify(TRICK)); } catch (e) {} pushTrick(); }
-/* ---- presets: named snapshots of the trick options (the dot settings and the up-next position are not part of one) ---- */
+/* ---- presets: named snapshots of the trick settings (the dot settings and the up-next position are not part of one) ---- */
 const PRESET_SKIP = ['shift', 'size', 'xIdx'];
 let PRESETS = [], PRESET_CUR = null, PRESET_MSG = '', PRESET_REN = null;
 try { const p = JSON.parse(localStorage.getItem('calcpresets') || 'null'); if (p && Array.isArray(p.list)) { PRESETS = p.list.filter(x => x && x.id && typeof x.name === 'string' && x.data && typeof x.data === 'object'); PRESET_CUR = p.cur || null; } } catch (e) {}
@@ -2121,7 +2122,7 @@ function presetText(list) { return JSON.stringify({ doppulatorPresets: 1, list: 
 async function copyText(t) { try { await navigator.clipboard.writeText(t); return true; } catch (e) { return false; } }
 function presetsBody() {
   const cur = PRESETS.find(p => p.id === PRESET_CUR);
-  let h = `<div class="sub" style="color:#9a9a9a;margin-top:8px">Save your trick options under a name and bring them back with one tap. The dot settings are not part of a preset.</div>`;
+  let h = `<div class="sub" style="color:#9a9a9a;margin-top:8px">Save your trick settings under a name and bring them back with one tap. The dot settings are not part of a preset.</div>`;
   if (PRESETS.length) h += PRESETS.map(p => PRESET_REN === p.id
     ? `<div class="row" style="gap:8px;align-items:center;margin:6px 0"><input class="field" id="prRenIn" value="${esc(p.name)}" autocomplete="off" style="flex:1;box-sizing:border-box"><button class="primary" id="prRenOk">OK</button><button id="prRenNo">Cancel</button></div>`
     : `<div class="row" style="gap:8px;align-items:center;margin:6px 0"><button class="${p.id === PRESET_CUR ? 'primary' : ''}" data-prload="${p.id}" style="flex:1;text-align:left">${esc(p.name)}${p.id === PRESET_CUR ? ' (loaded)' : ''}</button><button data-prren="${p.id}" style="padding:6px 10px">Rename</button><button data-prdel="${p.id}" style="padding:6px 10px">✕</button></div>`).join('');
@@ -2142,7 +2143,7 @@ function wirePresets(done) {
   m.querySelectorAll('[data-prload]').forEach(b => b.onclick = () => {
     const p = PRESETS.find(x => x.id === b.dataset.prload); if (!p) return;
     const keep = { shift: TRICK.shift, size: TRICK.size };
-    TRICK = JSON.parse(JSON.stringify(p.data)); if (!TRICK.mode) TRICK.mode = 'off';
+    TRICK = JSON.parse(JSON.stringify(p.data)); if (!TRICK.mode || TRICK.mode === 'off') TRICK.mode = 'finisher';
     if (keep.shift !== undefined) TRICK.shift = keep.shift; if (keep.size !== undefined) TRICK.size = keep.size; TRICK.xIdx = 0;
     PRESET_CUR = p.id; savePresets(); saveTrick(); again('Loaded "' + p.name + '".');
   });
@@ -2507,10 +2508,9 @@ function renderMenu(view, arg) {
   const m = $('#menuBody'); const done = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
   if (view === 'home') {
     m.innerHTML = `<div class="mtop"><h1>Menu</h1><button class="primary" id="mClose">Back to calculator</button></div>
-      <details class="sec" data-sec="trick"${M_OPEN.trick ? ' open' : ''}><summary>Trick options</summary>
-      <div class="row" style="flex-wrap:wrap">${[['off', 'Off'], ['finisher', 'Settings']].map(([k, l]) => `<button class="${TRICK.mode === k ? 'primary' : ''}" data-tm="${k}">${l}</button>`).join('')}</div>
-      ${TAGS[TRICK.mode] ? `<div style="margin-top:10px;font-weight:600;color:#fff">${TAGS[TRICK.mode]}</div>` : ''}
-      ${TRICK.mode === 'finisher' ? (() => {
+      <details class="sec" data-sec="trick"${M_OPEN.trick ? ' open' : ''}><summary>Trick settings</summary>
+      <div class="sub" style="color:#9a9a9a;margin-top:8px">When the trick is armed, the clock hands on the history button (top left) tilt left. Arm it by tapping the display with two fingers, or by tapping the display and C/AC at the same time. The calculator always opens unarmed.</div>
+      ${(() => {
         const X = (k, d) => TRICK[k] === undefined ? d : TRICK[k], btn = (k, v, l, d) => `<button class="${X(k, d) === v ? 'primary' : ''}" data-xk="${k}" data-xv="${v}">${l}</button>`;
         const useDT = !!X('xBuff', false);
         let out = `<div class="sub" style="color:#9a9a9a;margin-top:8px">Target</div><div class="row"><button class="${!useDT ? 'primary' : ''}" data-xk="xBuff" data-xv="">Number</button><button class="${useDT ? 'primary' : ''}" data-xk="xBuff" data-xv="1">Date/Time</button></div>`;
@@ -2531,20 +2531,14 @@ function renderMenu(view, arg) {
           <div class="sub" style="color:#9a9a9a;margin-top:6px">Right now it would show: <b style="color:#fff">${esc(pv)}</b></div>`;
         }
         return out;
-      })() : ''}
-      <div class="sub" style="color:#9a9a9a;margin-top:8px">When armed, the hands of the clock on the history button in the top left tilt to the left. The calculator always opens unarmed.</div>
-      ${TRICK.mode === 'finisher' ? buffGuide() : ''}
+      })()}
+      ${buffGuide()}
       </details><details class="sec" data-sec="presets"${M_OPEN.presets ? ' open' : ''}><summary>Presets</summary>${presetsBody()}
       </details><details class="sec" data-sec="dots"${M_OPEN.dots ? ' open' : ''}><summary>Dot visibility</summary>${dotPickerBody()}
-      </details><details class="sec" data-sec="shots"${M_OPEN.shots ? ' open' : ''}><summary>Screenshots</summary>
-      <button class="wide" id="mList">Review and edit screenshots${dirty ? ' (changes waiting)' : ''}</button>
-      <button class="wide" id="mRedo">Redo the guided screenshot steps</button>
-      <button class="wide" id="mLand">${hasLandscape ? 'Replace landscape screen' : 'Add a landscape screen (optional)'}</button>
-      <input type="file" id="mLandFile" accept="image/*" style="display:none">
-      <div class="sub" style="color:#9a9a9a;font-style:italic">A screenshot of your real calculator rotated sideways. If someone turns your phone, this shows instead of the portrait view stretching to fit.</div>
-      </details><details class="sec" data-sec="home"${M_OPEN.home ? ' open' : ''}><summary>Home screen</summary>
-      <button class="wide" id="mGuide">How to add this to the home screen</button>
-      <button class="wide" id="mCC">Add the calculator to Control Center</button>
+      </details><details class="sec" data-sec="shots"${M_OPEN.shots ? ' open' : ''}><summary>Setup</summary>
+      <button class="wide" id="mList">Edit screenshots${dirty ? ' (changes waiting)' : ''}</button>
+      <button class="wide" id="mRedo">Retake screenshots (guided)</button>
+      <button class="wide" id="mGuide">Setup guide</button>
       </details><details class="sec" data-sec="danger"${M_OPEN.danger ? ' open' : ''}><summary>Danger</summary>
       <button class="wide" id="mReset">Start over and erase everything</button>
       </details>
@@ -2563,16 +2557,10 @@ function renderMenu(view, arg) {
     });
     done('xtAdd', () => { ensureTargets(); TRICK.xTargets.push(''); saveTrick(); renderMenu('home'); const f = m.querySelectorAll('[data-xt]'); const l = f[f.length - 1]; if (l) { l.focus(); l.scrollIntoView({ block: 'center' }); } });
     done('xtReset', () => { TRICK.xIdx = 0; saveTrick(); renderMenu('home'); });
-    done('mGuide', () => showGuide()); done('mCC', () => renderMenu('cc'));
+    done('mGuide', () => showGuide());
     done('mClose', hideMenu); done('mList', () => renderMenu('list')); wireDotPicker(done); wirePresets(done);
     done('mRedo', () => { hideMenu(); leaveCalc(); W.skipped = {}; W.retake = false; W.marks = {}; W.uploaded = []; $('main').classList.remove('boot'); W.list = shotList(); goCap(0); });
-    done('mLand', () => $('#mLandFile').click());
-    const lf = $('#mLandFile'); if (lf) lf.onchange = async e => {
-      const f = e.target.files[0]; if (!f) return;
-      const durl = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(f); });
-      try { await kvSet('landscape', durl); hasLandscape = true; dirty = true; } catch (err) {}
-      renderMenu('home');
-    };
+
     done('mReset', async () => { if (!confirm('Erase the calculator and all screenshots from this device?')) return; try { await kvClear(); localStorage.removeItem('calcbuilder'); } catch (e) {} location.reload(); });
   } else if (view === 'list') {
     m.innerHTML = `<div class="row sp"><button id="mBack">Back</button>${dirty ? '<button class="primary" id="mRebuild">Rebuild calculator</button>' : ''}</div><h2 style="margin-top:6px">Screenshots</h2>` +
