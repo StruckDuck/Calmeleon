@@ -2104,14 +2104,10 @@ let hasLandscape = false;
 let TRICK = { mode: 'finisher', answer: '' };
 try { const t = JSON.parse(localStorage.getItem('calctrick') || 'null'); if (t && t.mode) TRICK = t; } catch (e) {}
 if (TRICK.mode === 'off') TRICK.mode = 'finisher';
-TRICK.xIdx = 0;
 function ensureTargets() {
   if (!Array.isArray(TRICK.xTargets) || !TRICK.xTargets.length) TRICK.xTargets = [TRICK.answer || ''];
   if (!Number.isInteger(TRICK.xIdx) || TRICK.xIdx < 0 || TRICK.xIdx >= TRICK.xTargets.length) TRICK.xIdx = 0;
 }
-function resetUpNext() { if (!TRICK.xIdx) return; TRICK.xIdx = 0; saveTrick(); try { if ($('#menu').classList.contains('on') && MENU_VIEW === 'home') renderMenu('home'); } catch (e) {} }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') resetUpNext(); });
-addEventListener('pagehide', resetUpNext);
 function pushTrick() { try { $('#calcFrame').contentWindow.__setTrick(TRICK); } catch (e) {} }
 function saveTrick() { try { localStorage.setItem('calctrick', JSON.stringify(TRICK)); } catch (e) {} pushTrick(); }
 /* ---- presets: named snapshots of the trick settings (the dot settings and the up-next position are not part of one) ---- */
