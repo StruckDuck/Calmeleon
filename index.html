@@ -54,6 +54,8 @@
   #calcFrame{width:100%;height:100%;border:0;background:#000;display:block;touch-action:none}
   #menu{display:none;position:fixed;inset:0;background:#111;z-index:20;overflow:auto;-webkit-overflow-scrolling:touch;padding:calc(env(safe-area-inset-top) + 16px) 16px 60px} #menu.on{display:block}
   #menu .inner{max-width:520px;margin:0 auto}
+  #menu .mtop{position:sticky;top:calc(-1 * (env(safe-area-inset-top) + 16px));z-index:5;display:flex;align-items:center;justify-content:space-between;gap:12px;background:#111;margin:calc(-1 * (env(safe-area-inset-top) + 16px)) -16px 8px;padding:calc(env(safe-area-inset-top) + 12px) 16px 10px}
+  #menu .mtop h1{margin:0}
   .msec{margin:22px 0 6px;color:#f09a37;font-weight:600;font-size:13px;letter-spacing:.04em;text-transform:uppercase}
   .mrow{display:flex;gap:10px;align-items:center;padding:8px 4px;border-bottom:1px solid #222;cursor:pointer}
   .mrow img{height:44px;border-radius:4px;border:1px solid #333} .mrow .n{width:26px;color:#777;text-align:right}
@@ -2334,19 +2336,20 @@ addEventListener('message', e => {
   if (e.data.calcLucky) { const r = e.data.calcLucky; if (!r || typeof r.expr !== 'string') return; const a = luckyList(); a.push({ t: +r.t || Date.now(), expr: r.expr.slice(0, 200), target: String(r.target).slice(0, 40) }); try { localStorage.setItem('calclucky', JSON.stringify(a.slice(-200))); } catch (x) {} }
   if (Number.isInteger(e.data.calcIdx)) { ensureTargets(); TRICK.xIdx = Math.max(0, Math.min(TRICK.xTargets.length - 1, e.data.calcIdx)); try { localStorage.setItem('calctrick', JSON.stringify(TRICK)); } catch (x) {} if ($('#menu').classList.contains('on') && MENU_VIEW === 'home') renderMenu('home'); }
 });
+function dotPickerBody() {
+  return `<div class="sub" style="color:#9a9a9a;margin-top:8px">Pixel contrast: <b id="tShiftV">${TRICK.shift || 22}</b></div><input type="range" id="tShift" min="4" max="200" value="${TRICK.shift || 22}" style="width:100%">
+        <div class="sub" style="color:#9a9a9a;margin-top:8px">Pixel size: <b id="tSizeV">${TRICK.size || 2.5}</b></div><input type="range" id="tSize" min="1" max="6" step="0.5" value="${TRICK.size || 2.5}" style="width:100%">
+        <div class="sub" style="color:#9a9a9a;margin-top:10px">Close-up of the 5 key, mark at the North position</div><canvas id="pvA" style="display:block;margin-top:4px;width:270px;max-width:100%;height:auto"></canvas>
+        <div class="sub" style="color:#9a9a9a;margin-top:10px">Same key at its real size</div><canvas id="pvB" style="display:block;margin-top:4px"></canvas>
+        <div class="sub" id="pvT" style="color:#9a9a9a"></div><div class="row"><button id="tTest">Show a test pattern (12345678)</button></div>`;
+}
 function secretModesPanel() {
   const modes = [['secret', 'Soggy Worms'], ['nines', 'mmmmmmmmm fudge'], ['nerd', 'Nerd Alert']];
   let h = `<div class="msec" style="margin-top:20px">Extra modes</div><div class="row" style="flex-wrap:wrap">${modes.map(([k, l]) => `<button class="${TRICK.mode === k ? 'primary' : ''}" data-tm="${k}">${l}</button>`).join('')}</div>`;
   if (TRICK.mode === 'secret' || TRICK.mode === 'nines' || TRICK.mode === 'nerd') {
     h += TAGS[TRICK.mode] ? `<div style="margin-top:10px;font-weight:600;color:#fff">${TAGS[TRICK.mode]}</div>` : '';
     if (TRICK.mode === 'secret') {
-      h += `<details class="exp"><summary>Adjust dot visibility</summary>
-        <div class="sub" style="color:#9a9a9a;margin-top:8px">Pixel contrast: <b id="tShiftV">${TRICK.shift || 22}</b></div><input type="range" id="tShift" min="4" max="200" value="${TRICK.shift || 22}" style="width:100%">
-        <div class="sub" style="color:#9a9a9a;margin-top:8px">Pixel size: <b id="tSizeV">${TRICK.size || 2.5}</b></div><input type="range" id="tSize" min="1" max="6" step="0.5" value="${TRICK.size || 2.5}" style="width:100%">
-        <div class="sub" style="color:#9a9a9a;margin-top:10px">Close-up of the 5 key, mark at the North position</div><canvas id="pvA" style="display:block;margin-top:4px;width:270px;max-width:100%;height:auto"></canvas>
-        <div class="sub" style="color:#9a9a9a;margin-top:10px">Same key at its real size</div><canvas id="pvB" style="display:block;margin-top:4px"></canvas>
-        <div class="sub" id="pvT" style="color:#9a9a9a"></div><div class="row"><button id="tTest">Show a test pattern (12345678)</button></div>
-      </details>`;
+      h += `<details class="exp"><summary>Adjust dot visibility</summary>${dotPickerBody()}</details>`;
     }
     h += `<div class="sub" style="color:#9a9a9a;margin-top:8px">${TRICK.mode === 'nerd' ? '' : TRICK.mode === 'nines' ? 'When equals is tapped one digit of any whole-number total of 10 or more is changed so its digits add up to a multiple of 9.' : 'After completing an equation and memorizing the answer the spectator clears the screen with the AC button. You can now find the answer by looking at the number pad.<br><br>On the number pad each digit in their total now has a very small dot around the edge of the button. The placement of this dot shows you where in the total that digit appears. Only the first 8 digits of a total get a dot. The spots stay until you switch the mode off, which clears them.'}<br><br>Tap the display with two fingers to arm or disarm the mode. When armed, the hands of the clock on the history button in the top left tilt to the left. The calculator always opens unarmed.</div>`;
     if (TRICK.mode === 'secret') h += wormsDiagram();
@@ -2400,7 +2403,7 @@ function buffGuide() {
 const thumbURL = {};
 const turl = i => thumbURL[i] || (thumbURL[i] = URL.createObjectURL(files[i]));
 function hideMenu() { $('#menu').classList.remove('on'); }
-const M_OPEN = { trick: true, shots: false, home: false, danger: false };
+const M_OPEN = { trick: true, dots: false, shots: false, home: false, danger: false };
 let MENU_VIEW = 'home';
 function openMenu() { renderMenu('home'); $('#menu').classList.add('on'); $('#menu').scrollTop = 0; }
 function targetRows() {
@@ -2412,11 +2415,16 @@ function targetRows() {
       ${TRICK.xTargets.length > 1 ? `<button data-xtdel="${i}" style="padding:6px 10px">✕</button>` : ''}
     </div>`).join('');
 }
+function wireDotPicker(done) {
+    const pvDraw = () => { if (!$('#pvA')) return; try { const w = $('#calcFrame').contentWindow; if (typeof w.__previewMarks !== 'function') { $('#pvT').textContent = 'This saved calculator is out of date. Close the app and reopen it.'; return; } const r = w.__previewMarks($('#pvA'), $('#pvB'), TRICK.shift || 22, TRICK.size || 2.5); if (r) { $('#pvB').style.width = (r.width * w.innerWidth) + 'px'; $('#pvT').textContent = `Key colour ${r.key.join(',')}, mark colour ${r.px.join(',')}`; } else $('#pvT').textContent = 'Preview not ready yet, close and reopen the menu.'; } catch (e) { $('#pvT').textContent = 'Preview error: ' + e.message; } };
+    const tsh = $('#tShift'); if (tsh) { tsh.oninput = e => { TRICK.shift = +e.target.value; $('#tShiftV').textContent = e.target.value; saveTrick(); pvDraw(); }; $('#tSize').oninput = e => { TRICK.size = +e.target.value; $('#tSizeV').textContent = e.target.value; saveTrick(); pvDraw(); }; pvDraw(); }
+    done('tTest', () => { try { $('#calcFrame').contentWindow.__testMarks(); } catch (e) {} hideMenu(); });
+}
 function renderMenu(view, arg) {
   MENU_VIEW = view;
   const m = $('#menuBody'); const done = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
   if (view === 'home') {
-    m.innerHTML = `<h1 style="margin-top:0">Menu</h1>
+    m.innerHTML = `<div class="mtop"><h1>Menu</h1><button class="primary" id="mClose">Back to calculator</button></div>
       <details class="sec" data-sec="trick"${M_OPEN.trick ? ' open' : ''}><summary>Trick options</summary>
       <div class="row" style="flex-wrap:wrap">${[['off', 'Off'], ['finisher', 'Settings']].map(([k, l]) => `<button class="${TRICK.mode === k ? 'primary' : ''}" data-tm="${k}">${l}</button>`).join('')}</div>
       ${TAGS[TRICK.mode] ? `<div style="margin-top:10px;font-weight:600;color:#fff">${TAGS[TRICK.mode]}</div>` : ''}
@@ -2444,6 +2452,7 @@ function renderMenu(view, arg) {
       })() : ''}
       <div class="sub" style="color:#9a9a9a;margin-top:8px">When armed, the hands of the clock on the history button in the top left tilt to the left. The calculator always opens unarmed.</div>
       ${TRICK.mode === 'finisher' ? buffGuide() : ''}
+      </details><details class="sec" data-sec="dots"${M_OPEN.dots ? ' open' : ''}><summary>Dot visibility</summary>${dotPickerBody()}
       </details><details class="sec" data-sec="shots"${M_OPEN.shots ? ' open' : ''}><summary>Screenshots</summary>
       <button class="wide" id="mList">Review and edit screenshots${dirty ? ' (changes waiting)' : ''}</button>
       <button class="wide" id="mRedo">Redo the guided screenshot steps</button>
@@ -2456,7 +2465,7 @@ function renderMenu(view, arg) {
       </details><details class="sec" data-sec="danger"${M_OPEN.danger ? ' open' : ''}><summary>Danger</summary>
       <button class="wide" id="mReset">Start over and erase everything</button>
       </details>
-      <div class="row" style="margin-top:24px"><button class="primary big" id="mClose">Back to calculator</button></div>`;
+      `;
     m.querySelectorAll('details.sec').forEach(d => d.addEventListener('toggle', () => { M_OPEN[d.dataset.sec] = d.open; }));
     m.querySelectorAll('[data-tm]').forEach(b => b.onclick = () => { TRICK.mode = b.dataset.tm; saveTrick(); renderMenu('home'); });
     m.querySelectorAll('[data-xk]').forEach(b => b.onclick = () => { const k = b.dataset.xk, v = b.dataset.xv; TRICK[k] = (k === 'xYear' || k === 'xClock') ? +v : k === 'xBuff' ? !!v : v; saveTrick(); renderMenu('home'); });
@@ -2469,10 +2478,10 @@ function renderMenu(view, arg) {
       if (TRICK.xIdx > i) TRICK.xIdx--; if (TRICK.xIdx >= TRICK.xTargets.length) TRICK.xIdx = 0;
       saveTrick(); renderMenu('home');
     });
-    done('xtAdd', () => { ensureTargets(); TRICK.xTargets.push(''); saveTrick(); renderMenu('home'); });
+    done('xtAdd', () => { ensureTargets(); TRICK.xTargets.push(''); saveTrick(); renderMenu('home'); const f = m.querySelectorAll('[data-xt]'); const l = f[f.length - 1]; if (l) { l.focus(); l.scrollIntoView({ block: 'center' }); } });
     done('xtReset', () => { TRICK.xIdx = 0; saveTrick(); renderMenu('home'); });
     done('mGuide', () => showGuide()); done('mCC', () => renderMenu('cc'));
-    done('mClose', hideMenu); done('mList', () => renderMenu('list'));
+    done('mClose', hideMenu); done('mList', () => renderMenu('list')); wireDotPicker(done);
     done('mRedo', () => { hideMenu(); leaveCalc(); W.skipped = {}; W.retake = false; W.marks = {}; W.uploaded = []; $('main').classList.remove('boot'); W.list = shotList(); goCap(0); });
     done('mLand', () => $('#mLandFile').click());
     const lf = $('#mLandFile'); if (lf) lf.onchange = async e => {
@@ -2507,9 +2516,7 @@ function renderMenu(view, arg) {
     done('mBack', () => renderMenu('home'));
     m.querySelectorAll('[data-tm]').forEach(b => b.onclick = () => { TRICK.mode = b.dataset.tm; saveTrick(); renderMenu('lucky'); });
     if ($('#nbWrap')) nbInit();
-    const pvDraw = () => { if (!$('#pvA')) return; try { const w = $('#calcFrame').contentWindow; if (typeof w.__previewMarks !== 'function') { $('#pvT').textContent = 'This saved calculator is out of date. Close the app and reopen it.'; return; } const r = w.__previewMarks($('#pvA'), $('#pvB'), TRICK.shift || 22, TRICK.size || 2.5); if (r) { $('#pvB').style.width = (r.width * w.innerWidth) + 'px'; $('#pvT').textContent = `Key colour ${r.key.join(',')}, mark colour ${r.px.join(',')}`; } else $('#pvT').textContent = 'Preview not ready yet, close and reopen the menu.'; } catch (e) { $('#pvT').textContent = 'Preview error: ' + e.message; } };
-    const tsh = $('#tShift'); if (tsh) { tsh.oninput = e => { TRICK.shift = +e.target.value; $('#tShiftV').textContent = e.target.value; saveTrick(); pvDraw(); }; $('#tSize').oninput = e => { TRICK.size = +e.target.value; $('#tSizeV').textContent = e.target.value; saveTrick(); pvDraw(); }; pvDraw(); }
-    done('tTest', () => { try { $('#calcFrame').contentWindow.__testMarks(); } catch (e) {} hideMenu(); });
+    wireDotPicker(done);
     done('mDetails', () => renderMenu('details'));
     done('mSave', () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([calcHtml], { type: 'text/html' })); a.download = 'index.html'; document.body.appendChild(a); a.click(); a.remove(); });
   } else if (view === 'cc') {
