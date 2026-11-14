@@ -2443,7 +2443,7 @@ function secretModesPanel() {
 }
 function luckyPage() {
   const a = luckyList().slice().reverse();
-  return `<div class="row sp"><button id="mBack">Back</button></div><h2 style="margin-top:6px">Lucky totals (${a.length})</h2><div class="sub" style="color:#9a9a9a;margin:8px 0">Times the sum already equalled your number with no help, and = was tapped.</div>${a.length ? a.map(r => `<div class="sub" style="margin:10px 0"><b style="color:#fff">${esc(r.expr)} = ${esc(r.target)}</b><br><span style="color:#9a9a9a">${esc(new Date(r.t).toLocaleDateString())} at ${esc(new Date(r.t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))}</span></div>`).join('') : '<div class="sub" style="color:#9a9a9a">None yet.</div>'}`;
+  return `<div class="row sp"><button id="mBack">Back</button><button class="primary" id="mClose">Back to calculator</button></div><h2 style="margin-top:6px">Lucky totals (${a.length})</h2><div class="sub" style="color:#9a9a9a;margin:8px 0">Times the sum already equalled your number with no help, and = was tapped.</div>${a.length ? a.map(r => `<div class="sub" style="margin:10px 0"><b style="color:#fff">${esc(r.expr)} = ${esc(r.target)}</b><br><span style="color:#9a9a9a">${esc(new Date(r.t).toLocaleDateString())} at ${esc(new Date(r.t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))}</span></div>`).join('') : '<div class="sub" style="color:#9a9a9a">None yet.</div>'}`;
 }
 /* a J drawn on the menu with one finger opens the hidden page */
 function isJ(pts) {
@@ -2505,6 +2505,7 @@ function wireDotPicker(done) {
 }
 function renderMenu(view, arg) {
   MENU_VIEW = view;
+  if (view === 'home' && TRICK.mode !== 'finisher') { TRICK.mode = 'finisher'; saveTrick(); }
   const m = $('#menuBody'); const done = (id, fn) => { const e = document.getElementById(id); if (e) e.onclick = fn; };
   if (view === 'home') {
     m.innerHTML = `<div class="mtop"><h1>Menu</h1><button class="primary" id="mClose">Back to calculator</button></div>
@@ -2584,7 +2585,7 @@ function renderMenu(view, arg) {
     $('#mFile').onchange = e => { const f = e.target.files[0]; if (!f) return; files[i] = f; delete thumbURL[i]; dirty = true; renderMenu('detail', i); };
   } else if (view === 'lucky') {
     m.innerHTML = luckyPage() + secretModesPanel();
-    done('mBack', () => renderMenu('home'));
+    done('mBack', () => renderMenu('home')); done('mClose', hideMenu);
     m.querySelectorAll('[data-tm]').forEach(b => b.onclick = () => { TRICK.mode = b.dataset.tm; saveTrick(); renderMenu('lucky'); });
     if ($('#nbWrap')) nbInit();
     wireDotPicker(done);
