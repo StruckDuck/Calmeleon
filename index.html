@@ -2109,6 +2109,67 @@ function ensureTargets() {
 }
 function pushTrick() { try { $('#calcFrame').contentWindow.__setTrick(TRICK); } catch (e) {} }
 function saveTrick() { try { localStorage.setItem('calctrick', JSON.stringify(TRICK)); } catch (e) {} pushTrick(); }
+/* ---- presets: named snapshots of the trick options (the dot settings and the up-next position are not part of one) ---- */
+const PRESET_SKIP = ['shift', 'size', 'xIdx'];
+let PRESETS = [], PRESET_CUR = null, PRESET_MSG = '', PRESET_REN = null;
+try { const p = JSON.parse(localStorage.getItem('calcpresets') || 'null'); if (p && Array.isArray(p.list)) { PRESETS = p.list.filter(x => x && x.id && typeof x.name === 'string' && x.data && typeof x.data === 'object'); PRESET_CUR = p.cur || null; } } catch (e) {}
+function savePresets() { try { localStorage.setItem('calcpresets', JSON.stringify({ list: PRESETS, cur: PRESET_CUR })); } catch (e) {} }
+function presetSnap() { const d = JSON.parse(JSON.stringify(TRICK)); PRESET_SKIP.forEach(k => delete d[k]); return d; }
+function presetId() { return 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function presetUnique(name, skipId) { const base = name || 'Preset'; let n = base, i = 2; const has = t => PRESETS.some(p => p.id !== skipId && p.name.toLowerCase() === t.toLowerCase()); while (has(n)) n = base + ' ' + i++; return n; }
+function presetText(list) { return JSON.stringify({ doppulatorPresets: 1, list: list.map(p => ({ name: p.name, data: p.data })) }); }
+async function copyText(t) { try { await navigator.clipboard.writeText(t); return true; } catch (e) { return false; } }
+function presetsBody() {
+  const cur = PRESETS.find(p => p.id === PRESET_CUR);
+  let h = `<div class="sub" style="color:#9a9a9a;margin-top:8px">Save your trick options under a name and bring them back with one tap. The dot settings are not part of a preset.</div>`;
+  if (PRESETS.length) h += PRESETS.map(p => PRESET_REN === p.id
+    ? `<div class="row" style="gap:8px;align-items:center;margin:6px 0"><input class="field" id="prRenIn" value="${esc(p.name)}" autocomplete="off" style="flex:1;box-sizing:border-box"><button class="primary" id="prRenOk">OK</button><button id="prRenNo">Cancel</button></div>`
+    : `<div class="row" style="gap:8px;align-items:center;margin:6px 0"><button class="${p.id === PRESET_CUR ? 'primary' : ''}" data-prload="${p.id}" style="flex:1;text-align:left">${esc(p.name)}${p.id === PRESET_CUR ? ' (loaded)' : ''}</button><button data-prren="${p.id}" style="padding:6px 10px">Rename</button><button data-prdel="${p.id}" style="padding:6px 10px">✕</button></div>`).join('');
+  else h += '<div class="sub" style="color:#9a9a9a;margin-top:8px">No presets yet.</div>';
+  h += `<div class="sub" style="color:#9a9a9a;margin-top:10px">Name for a new preset</div><input class="field" id="prName" placeholder="Preset ${PRESETS.length + 1}" autocomplete="off" style="width:100%;box-sizing:border-box">
+    <div class="row" style="flex-wrap:wrap;margin-top:6px">${cur ? `<button class="primary" id="prSave">Save</button>` : ''}<button class="${cur ? '' : 'primary'}" id="prSaveAs">${cur ? 'Save as new' : 'Save'}</button></div>
+    ${cur ? `<div class="sub" style="color:#9a9a9a;font-style:italic;margin-top:4px">Save replaces "${esc(cur.name)}" with your current options. Save as new makes another preset.</div>` : ''}`;
+  if (PRESET_MSG) h += `<div class="sub" style="color:#f09a37;margin-top:6px">${esc(PRESET_MSG)}</div>`;
+  h += `<div class="sub" style="color:#9a9a9a;margin-top:12px">Copy and paste</div><div class="row"><button id="prCopy">Copy all presets</button></div>
+    <textarea class="field" id="prPaste" rows="3" placeholder="Paste copied presets here" autocomplete="off" autocapitalize="off" spellcheck="false" style="width:100%;box-sizing:border-box;margin-top:6px"></textarea>
+    <div class="row" style="margin-top:6px"><button id="prImport">Add pasted presets</button></div>`;
+  return h;
+}
+function wirePresets(done) {
+  const m = $('#menuBody'), again = msg => { PRESET_MSG = msg; renderMenu('home'); };
+  done('prSave', () => { const p = PRESETS.find(x => x.id === PRESET_CUR); if (!p) return; p.data = presetSnap(); savePresets(); again('Saved over "' + p.name + '".'); });
+  done('prSaveAs', () => { const nm = $('#prName'), n = presetUnique(((nm && nm.value) || '').trim() || 'Preset ' + (PRESETS.length + 1)); const p = { id: presetId(), name: n, data: presetSnap() }; PRESETS.push(p); PRESET_CUR = p.id; savePresets(); again('Saved as "' + n + '".'); });
+  m.querySelectorAll('[data-prload]').forEach(b => b.onclick = () => {
+    const p = PRESETS.find(x => x.id === b.dataset.prload); if (!p) return;
+    const keep = { shift: TRICK.shift, size: TRICK.size };
+    TRICK = JSON.parse(JSON.stringify(p.data)); if (!TRICK.mode) TRICK.mode = 'off';
+    if (keep.shift !== undefined) TRICK.shift = keep.shift; if (keep.size !== undefined) TRICK.size = keep.size; TRICK.xIdx = 0;
+    PRESET_CUR = p.id; savePresets(); saveTrick(); again('Loaded "' + p.name + '".');
+  });
+  m.querySelectorAll('[data-prren]').forEach(b => b.onclick = () => { PRESET_REN = b.dataset.prren; PRESET_MSG = ''; renderMenu('home'); const i = $('#prRenIn'); if (i) { i.focus(); i.select(); } });
+  done('prRenNo', () => { PRESET_REN = null; renderMenu('home'); });
+  done('prRenOk', () => { const p = PRESETS.find(x => x.id === PRESET_REN); const t = (($('#prRenIn') || {}).value || '').trim(); PRESET_REN = null; if (p && t) { p.name = presetUnique(t, p.id); savePresets(); } renderMenu('home'); });
+  m.querySelectorAll('[data-prdel]').forEach(b => b.onclick = async () => {
+    const i = PRESETS.findIndex(x => x.id === b.dataset.prdel); if (i < 0) return; const p = PRESETS[i];
+    const ok = await copyText(presetText([p]));
+    PRESETS.splice(i, 1); if (PRESET_CUR === p.id) PRESET_CUR = null; savePresets();
+    again('Deleted "' + p.name + '".' + (ok ? ' A copy is on your clipboard. Paste it into the box below to bring it back.' : ''));
+  });
+  done('prCopy', async () => {
+    const t = presetText(PRESETS), ok = await copyText(t), box = $('#prPaste');
+    if (ok) { PRESET_MSG = 'Copied ' + PRESETS.length + ' preset' + (PRESETS.length === 1 ? '' : 's') + '.'; renderMenu('home'); return; }
+    if (box) { box.value = t; box.focus(); box.select(); }
+  });
+  done('prImport', () => {
+    let n = 0; try {
+      const j = JSON.parse((($('#prPaste') || {}).value || '').trim()), list = Array.isArray(j) ? j : j && j.list;
+      if (!Array.isArray(list)) throw 0;
+      list.forEach(x => { if (!x || typeof x.name !== 'string' || !x.data || typeof x.data !== 'object') return; const d = JSON.parse(JSON.stringify(x.data)); PRESET_SKIP.forEach(k => delete d[k]); PRESETS.push({ id: presetId(), name: presetUnique(x.name.trim() || 'Preset'), data: d }); n++; });
+    } catch (e) { n = -1; }
+    if (n > 0) savePresets();
+    again(n < 0 ? 'That does not look like copied presets.' : n === 0 ? 'No presets found in that text.' : 'Added ' + n + ' preset' + (n === 1 ? '' : 's') + '.');
+  });
+}
 $('#calcFrame').addEventListener('load', pushTrick);
 function showCalc(html) {
   calcHtml = html; hideMenu(); document.body.classList.add('calcmode'); fitCalc();
@@ -2424,9 +2485,9 @@ function buffGuide() {
 const thumbURL = {};
 const turl = i => thumbURL[i] || (thumbURL[i] = URL.createObjectURL(files[i]));
 function hideMenu() { $('#menu').classList.remove('on'); }
-const M_OPEN = { trick: true, dots: false, shots: false, home: false, danger: false };
+const M_OPEN = { trick: true, presets: false, dots: false, shots: false, home: false, danger: false };
 let MENU_VIEW = 'home';
-function openMenu() { renderMenu('home'); $('#menu').classList.add('on'); $('#menu').scrollTop = 0; }
+function openMenu() { PRESET_MSG = ''; PRESET_REN = null; renderMenu('home'); $('#menu').classList.add('on'); $('#menu').scrollTop = 0; }
 function targetRows() {
   ensureTargets();
   return TRICK.xTargets.map((v, i) => `<div class="row" style="gap:8px;align-items:center;margin:6px 0">
@@ -2473,6 +2534,7 @@ function renderMenu(view, arg) {
       })() : ''}
       <div class="sub" style="color:#9a9a9a;margin-top:8px">When armed, the hands of the clock on the history button in the top left tilt to the left. The calculator always opens unarmed.</div>
       ${TRICK.mode === 'finisher' ? buffGuide() : ''}
+      </details><details class="sec" data-sec="presets"${M_OPEN.presets ? ' open' : ''}><summary>Presets</summary>${presetsBody()}
       </details><details class="sec" data-sec="dots"${M_OPEN.dots ? ' open' : ''}><summary>Dot visibility</summary>${dotPickerBody()}
       </details><details class="sec" data-sec="shots"${M_OPEN.shots ? ' open' : ''}><summary>Screenshots</summary>
       <button class="wide" id="mList">Review and edit screenshots${dirty ? ' (changes waiting)' : ''}</button>
@@ -2502,7 +2564,7 @@ function renderMenu(view, arg) {
     done('xtAdd', () => { ensureTargets(); TRICK.xTargets.push(''); saveTrick(); renderMenu('home'); const f = m.querySelectorAll('[data-xt]'); const l = f[f.length - 1]; if (l) { l.focus(); l.scrollIntoView({ block: 'center' }); } });
     done('xtReset', () => { TRICK.xIdx = 0; saveTrick(); renderMenu('home'); });
     done('mGuide', () => showGuide()); done('mCC', () => renderMenu('cc'));
-    done('mClose', hideMenu); done('mList', () => renderMenu('list')); wireDotPicker(done);
+    done('mClose', hideMenu); done('mList', () => renderMenu('list')); wireDotPicker(done); wirePresets(done);
     done('mRedo', () => { hideMenu(); leaveCalc(); W.skipped = {}; W.retake = false; W.marks = {}; W.uploaded = []; $('main').classList.remove('boot'); W.list = shotList(); goCap(0); });
     done('mLand', () => $('#mLandFile').click());
     const lf = $('#mLandFile'); if (lf) lf.onchange = async e => {
