@@ -2,19 +2,18 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-title" content="Calculator">
 <link rel="icon" href="data:,"><title>Calculator</title>
 <script>
 // iOS 26 and later lay a full-screen Home Screen app out one status bar short of the screen (WebKit bug 301108).
 // A page that is at least as tall as the whole screen gets the full height, so mark Home Screen mode early.
-try { if (navigator.standalone || matchMedia('(display-mode: standalone)').matches) { document.documentElement.classList.add('fsapp'); document.documentElement.dataset.fh = localStorage.getItem('calcfh') || 'A'; } } catch (e) {}
+try { if (navigator.standalone || matchMedia('(display-mode: standalone)').matches) { document.documentElement.classList.add('fsapp'); document.documentElement.dataset.fh = localStorage.getItem('calcfh2') || 'A'; } } catch (e) {}
 </script>
 <style>
   :root{color-scheme:dark}
+  html{touch-action:manipulation}
+  input,select,textarea{font-size:max(16px,1em)}
   /* page-height rules being tried for the iOS Home Screen short-window bug; A is no rule */
   html[data-fh="B"],html[data-fh="B"] body{min-height:100vh;min-height:100lvh}
   html[data-fh="C"]{min-height:min(100lvh,calc(100% + env(safe-area-inset-top)))!important}
@@ -2564,7 +2563,7 @@ function renderMenu(view, arg) {
     done('mBack', () => renderMenu('lucky'));
     m.querySelectorAll('[data-fh]').forEach(b => b.onclick = () => {
       if (!document.documentElement.classList.contains('fsapp')) return;
-      document.documentElement.dataset.fh = b.dataset.fh; try { localStorage.setItem('calcfh', b.dataset.fh); } catch (e) {}
+      document.documentElement.dataset.fh = b.dataset.fh; try { localStorage.setItem('calcfh2', b.dataset.fh); } catch (e) {}
       fitCalc(); setTimeout(fhApply, 100); setTimeout(() => renderMenu('details'), 350);
     });
   }
