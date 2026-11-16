@@ -2752,7 +2752,7 @@ function desktopIntro() {
   try { const ic = await kvGet('icon'); if (ic) setIcon(ic); const nm = await kvGet('appname'); if (nm) setAppName(nm); } catch (e) {}
   try { hasLandscape = !!(await kvGet('landscape')); } catch (e) {}
   let seen = false; try { seen = !!localStorage.getItem('calcguide'); } catch (e) {}
-  if (!isStandalone() && !seen && !/[?&]noguide=1/.test(location.search)) showIconChoice();
+  if (!isStandalone() && !/[?&]noguide=1/.test(location.search)) showIconChoice();
   const had = await loadSaved();
   if (had) { const up = recompose(calcHtml); if (up !== calcHtml) { calcHtml = up; try { await kvSet('html', up); } catch (e) {} } showCalc(calcHtml); } else $('main').classList.remove('boot');
 })();
