@@ -2628,9 +2628,8 @@ function targetRows() {
   ensureTargets();
   return TRICK.xTargets.map((v, i) => `<div class="row" style="gap:8px;align-items:center;margin:6px 0">
       <span style="width:16px;color:#777;font-size:13px">${i + 1}.</span>
-      <input class="field" data-xt="${i}" inputmode="decimal" value="${esc(v)}" autocomplete="off" style="flex:1;box-sizing:border-box">
+      <input class="field" data-xt="${i}" inputmode="decimal" value="${esc(v)}" autocomplete="off" style="flex:1;box-sizing:border-box${i === TRICK.xIdx ? ';border-color:#f09a37;box-shadow:0 0 0 1px #f09a37' : ''}">
       <button data-xtneg="${i}" style="padding:6px 10px" aria-label="Make negative or positive">+/−</button>
-      ${i === TRICK.xIdx ? '<span style="color:#f09a37;font-size:12px;font-weight:600;white-space:nowrap">UP NEXT</span>' : ''}
       ${TRICK.xTargets.length > 1 ? `<button data-xtdel="${i}" style="padding:6px 10px">✕</button>` : ''}
     </div>`).join('');
 }
