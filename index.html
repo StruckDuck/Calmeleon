@@ -37,12 +37,12 @@
   .demo .kg.tap rect.hl{fill:#fff}.demo .kg.hold rect.hl{fill:#f0c24a}
   .demo .kg.tap path,.demo .kg.hold path,.demo .kg.tap rect.gl,.demo .kg.hold rect.gl{fill:#111}
   .demo .kg .stk{stroke:#fff}.demo .kg.tap .stk,.demo .kg.hold .stk{stroke:#111}
-  .rotbox{width:260px;height:260px;margin:14px auto 6px;position:relative}
+  .rotbox{width:calc(100% + 32px);height:460px;margin:8px -16px 4px;position:relative;overflow:hidden}
   #rotStage{position:absolute;inset:0}
   .rotc .kg path{fill:#fff}
   .rotc{position:absolute;left:50%;top:50%;background:#000;border:1px solid #333;display:block}
-  #rotP{height:236px;width:auto;border-radius:16px;animation:rotP 6s infinite}
-  #rotL{width:254px;height:auto;border-radius:10px;opacity:0;animation:rotL 6s infinite}
+  #rotP{width:232px;height:auto;border-radius:16px;animation:rotP 6s infinite}
+  #rotL{width:380px;height:auto;border-radius:10px;opacity:0;animation:rotL 6s infinite}
   @keyframes rotP{0%,16.7%{opacity:1;transform:translate(-50%,-50%) rotate(0)}28.5%{opacity:0;transform:translate(-50%,-50%) rotate(-55deg)}36.7%,63.3%{opacity:0;transform:translate(-50%,-50%) rotate(-90deg)}75%{opacity:0;transform:translate(-50%,-50%) rotate(-55deg)}83.3%,100%{opacity:1;transform:translate(-50%,-50%) rotate(0)}}
   @keyframes rotL{0%,22.7%{opacity:0;transform:translate(-50%,-50%) rotate(90deg)}36.7%,63.3%{opacity:1;transform:translate(-50%,-50%) rotate(0)}70%{opacity:1;transform:translate(-50%,-50%) rotate(30deg)}83.3%,100%{opacity:0;transform:translate(-50%,-50%) rotate(90deg)}}
   .demo .cap{margin-top:8px;text-align:center;color:#9a9a9a;font-size:13px;min-height:18px}
@@ -411,7 +411,7 @@ function padMarkup(C, vb) {
 function mountDemo(keysStr, land) {
   clearTimeout(demoT);
   const C = land ? CFG_L : CFG_P, sv = $('#demoSvg');
-  sv.setAttribute('viewBox', C.vb); sv.innerHTML = padMarkup(C); sv.parentNode.style.width = land ? '100%' : '';
+  sv.setAttribute('viewBox', C.vb); sv.innerHTML = padMarkup(C); sv.parentNode.style.width = land ? '380px' : '';
   const els = {};
   sv.querySelectorAll('.kg').forEach(g => { els[g.dataset.k] = { set className(v) { g.setAttribute('class', 'kg' + (v ? ' ' + v : '')); } }; });
   const disp = sv.querySelector('#demoDisp'), cap = $('#demoCap');
@@ -436,7 +436,7 @@ function mountDemo(keysStr, land) {
 /* rotate slide: portrait calculator turns sideways and crossfades into the landscape one */
 function mountRot() {
   const mk = (C, vb, id) => `<svg id="${id}" class="rotc" viewBox="${vb}" xmlns="http://www.w3.org/2000/svg">${padMarkup(C).replace('<g id="demoDisp" fill="#fff"></g>', '<g fill="#fff">' + dispGlyphsC(C, '0') + '</g>').replace(/id="demoDisp"/g, '')}</svg>`;
-  $('#rotStage').innerHTML = mk(CFG_P, CFG_P.full, 'rotP') + mk(CFG_L, CFG_L.full, 'rotL');
+  $('#rotStage').innerHTML = mk(CFG_P, CFG_P.full, 'rotP') + mk(CFG_L, CFG_L.vb, 'rotL');
 }
 
 /* ---- desktop reference view: same steps, no uploading; finish on the phone ---- */
