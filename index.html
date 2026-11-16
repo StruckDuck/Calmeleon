@@ -92,21 +92,21 @@
 <body>
 <main class="boot">
   <div class="screen on" id="s-intro">
-    <h1>Calculator Builder</h1>
-    <p class="sub">Everything runs in this page. Your screenshots never leave your device.</p>
-    <div class="words">Three steps:<br><b>1. Screenshots.</b> I show you one thing to do at a time. You switch to your Calculator, do it, take a screenshot, and come back.<br><b>2. Upload.</b> You pick all the screenshots at once.<br><b>3. Check.</b> I show each one and you tap ✓ or ✗.</div>
-    <div class="words" style="color:#9a9a9a;font-size:15px">Use the iPhone Calculator in portrait, dark mode. Leave this page open in its tab while you work. It remembers your place.</div>
-    <div class="words" id="introTip" style="font-size:15px;background:#1b1b1b;border:1px solid #333;border-radius:10px;padding:10px 12px"><b>Tip:</b> open this same link on a computer to see every step there, so you do not have to keep switching back and forth. Then come back here to upload.</div>
-    <label class="words" style="display:flex;gap:10px;align-items:flex-start;font-size:15px;margin-top:6px"><input type="checkbox" id="histOpt" style="display:inline-block;width:20px;height:20px;margin-top:2px"><span><b>Also set up the History sheet</b> (optional, about 6 more screenshots). Leave this off and the calculator is built without History.</span></label>
+    <h1>Doppulator</h1>
+    <p class="sub">Everything runs on your phone. Your screenshots never leave your device.</p>
+    <div class="words">Setup takes three steps.<br><b>1. Screenshots.</b> You get one task at a time. Perform each task in your Calculator, take a screenshot after each one, and come back.<br><b>2. Upload.</b> Pick all your screenshots at once.<br><b>3. Check.</b> Each one is shown so you can confirm it with ✓ or ✗.</div>
+    <div class="words" style="color:#9a9a9a;font-size:15px">Start the iPhone Calculator in portrait orientation. Keep this page open while you work. It saves your place.</div>
+    <div class="words" id="introTip" style="font-size:15px;background:#1b1b1b;border:1px solid #333;border-radius:10px;padding:10px 12px"><b>Tip:</b> open this link on a computer to avoid having to switch between apps, then come back here to upload.</div>
+    <div class="words" id="introCount" style="font-size:15px">You will take 35 screenshots.</div>
     <div class="row"><button class="primary big" id="startBtn">Start</button><button class="big" id="resumeBtn" style="display:none"></button></div>
     <div class="row"><button id="skipWalk" style="font-size:14px">I already have my screenshots, skip to upload</button></div>
-    <div class="row" id="guideRow"><a href="#" id="guideLink" style="color:#9a9a9a;font-size:14px">How to add this to your home screen</a></div>
+    <div class="row" id="guideRow"><a href="#" id="guideLink" style="color:#9a9a9a;font-size:14px">How to add this to your Home Screen</a></div>
   </div>
 
   <div class="screen" id="s-desk">
     <div class="kick">All done here</div>
     <div class="stepTitle">Complete the setup on your phone</div>
-    <div class="words" id="deskWords">Open this page on your phone, take the screenshots, and upload them there. Scan this to open it. On the phone you will also be offered an optional first step: a screenshot of your home screen showing the Calculator icon, which becomes the app icon.</div>
+    <div class="words" id="deskWords">Open this page on your phone, take the screenshots, and upload them there. Scan this to open it. On your phone you will start by choosing your app icon.</div>
     <div class="row" id="deskQR"></div>
     <div class="urlbox" id="deskUrl"></div>
     <div class="row"><button id="deskCopy">Copy link</button></div>
@@ -121,7 +121,6 @@
     <div class="demo"><div class="scr" id="demoScr">0</div><div class="g" id="demoG"></div><div class="cap" id="demoCap"></div></div>
     <div id="capExtra"></div>
     <div class="row sp"><button class="big" id="capBack">Back</button><button class="primary big" id="capNext">Next</button></div>
-    <div class="row"><button id="capSkip" style="font-size:13px;padding:5px 10px">Skip this one</button></div>
   </div>
 
   <div class="screen" id="s-up">
@@ -187,21 +186,35 @@
   </div>
   </div>
 </main>
+<div class="modal hi" id="iconChoice"><div>
+  <div style="font-weight:700;font-size:18px">Choose your app icon</div>
+  <p class="sub" style="margin:8px 0 14px;line-height:1.45">This is how the app will look on your Home Screen. The only way to change it later is to redo the whole setup.</p>
+  <button class="big" id="icChooseClone">Clone the Calculator icon</button>
+  <div class="sub" style="color:#9a9a9a;font-size:13px;margin:6px 2px 16px;line-height:1.4">Uses a screenshot of your own Home Screen, so it matches your real Calculator icon. Takes a few extra steps.</div>
+  <button class="big" id="icChooseFake">Use a fake icon</button>
+  <div class="sub" style="color:#9a9a9a;font-size:13px;margin:6px 2px 4px;line-height:1.4">Looks like a different app, with its own name. Pick from a few different options.</div>
+</div></div>
 <div class="modal hi" id="iconStart"><div>
-  <div style="font-weight:700;font-size:18px">Make your app icon</div>
-  <p class="sub" style="margin:8px 0;line-height:1.45">Optional. Take a screenshot of your home screen with the Calculator icon showing, come back here, and choose it. You mark the icon and it becomes this app's icon. Do it now, because the icon is set at the moment you add the app to your home screen.</p>
-  <div class="row"><label class="btn primary">Choose home screen screenshot<input type="file" id="iconFile" accept="image/*"></label></div>
+  <div style="font-weight:700;font-size:18px">Clone your Calculator icon</div>
+  <p class="sub" style="margin:8px 0;line-height:1.45">Take a screenshot of your Home Screen with the Calculator icon showing, then choose it here. You mark it and it becomes this app's icon.</p>
+  <div class="row"><label class="btn primary">Choose Home Screen screenshot<input type="file" id="iconFile" accept="image/*"></label></div>
   <div class="sub" id="iconState" style="color:#9a9a9a;min-height:18px"></div>
-  <button id="iconGo">Skip, use a plain icon</button>
+  <button id="iconGo">Continue with the saved icon</button>
+  <button id="iconBack">Back</button>
+</div></div>
+<div class="modal hi" id="iconDisguise"><div>
+  <div style="font-weight:700;font-size:18px">Pick a disguise</div>
+  <div id="dgTiles" style="display:flex;gap:10px;margin:14px 0 6px"></div>
+  <button class="primary" id="dgUse">Use this icon</button>
+  <button id="dgBack">Back</button>
 </div></div>
 <div class="modal hi" id="guideModal"><div>
-  <div style="font-weight:700;font-size:18px">Add this to your home screen first</div>
-  <div class="warnbox"><b>This step really matters.</b> The app only looks and works properly when it is opened from the home screen. If you skip it, you will have more work to do later, because you will have to redo the setup.</div>
+  <div style="font-weight:700;font-size:18px">Add this to your Home Screen first</div>
+  <p class="sub" style="margin:8px 0;color:#e8e8e8">The app only works properly when it's running from the Home Screen.</p>
   <ol id="guideSteps"></ol>
-  <div class="sub" style="color:#bbb">Then close this tab and open the new icon on your home screen. Do the setup from there, so everything stays in one place.</div>
+  <div class="sub" style="color:#bbb">Then close this tab and open the new icon on your Home Screen. Do the setup from there.</div>
   <button class="primary" id="guideOk" style="margin-top:14px">Got it</button>
-  <button id="guideSkip" style="color:#9a9a9a">Skip for now (not recommended)</button>
-  <div style="margin-top:10px"><a href="#" id="guideIcon" style="color:#9a9a9a;font-size:14px">Change the app icon</a></div>
+  <div style="margin-top:10px"><a href="#" id="guideIcon" style="color:#9a9a9a;font-size:14px">Change the icon</a></div>
 </div></div>
 <div class="modal hi" id="iconModal"><div>
   <div style="font-weight:700;font-size:17px">Mark the Calculator icon</div>
@@ -264,7 +277,7 @@ const SLOTS = [
   { id:'lh4', type:'lheld', group:'Landscape', title:'Hold a finger on =, landscape', how:'Stay rotated sideways. Screenshot with your other hand while holding.' },
 ];
 const IDX = id => SLOTS.findIndex(x => x.id === id);
-const withHist = () => { const c = document.getElementById('histOpt'); return !!(c && c.checked); };
+const withHist = () => true;
 const shotList = () => SLOTS.map((x, i) => i).filter(i => SLOTS[i].group !== 'History' || withHist());
 const isT = s => /^t\d$/.test(s.id);
 function varCands(S) {
@@ -357,16 +370,13 @@ const pageUrl = () => location.href.split('#')[0].split('?')[0];
 const expected = () => W.list.filter(i => !W.skipped[i]);
 function capRender() {
   const i = W.list[W.step], s = SLOTS[i];
-  if (IS_DESKTOP) { $('#capSkip').style.display = 'none'; }
-  $('#capBack').style.display = ''; $('#capSkip').style.display = ''; $('#capNext').style.display = '';
+  $('#capBack').style.display = ''; $('#capNext').style.display = '';
   $('#capKick').textContent = IS_DESKTOP ? `Screenshot ${W.step + 1} of ${W.list.length}` : `${W.retake ? 'Retake ' : 'Step 1 of 3, '}screenshot ${W.step + 1} of ${W.list.length}`;
   $('#capProg').style.width = (W.step / W.list.length * 100) + '%';
   $('#capTitle').textContent = s.title.replace(/^Type /, 'Type ');
   $('#capWords').textContent = wordsFor(s);
   $('#capBack').disabled = W.step === 0 && W.retake;
   $('#capNext').textContent = W.step === W.list.length - 1 ? (IS_DESKTOP ? 'Finish' : 'Done, upload them') : 'Next';
-  if (IS_DESKTOP) { $('#capSkip').style.display = 'none'; }
-  $('#capSkip').textContent = W.skipped[i] ? 'Skipped (tap to undo)' : 'Skip this one';
   $('#capExtra').innerHTML = (s.type === 'max' && !IS_DESKTOP) ? `<div class="words" style="font-size:15px">If it stopped accepting digits, how many did it take? (leave empty if it never stopped)<br><input class="field" id="limIn" inputmode="numeric" style="width:90px;margin-top:6px" value="${esc(s.limit)}"></div>` : '';
   const li = $('#limIn'); if (li) li.oninput = e => { SLOTS[i].limit = e.target.value.replace(/\D/g, ''); save(); };
   mountDemo(keysFor(s));
@@ -391,7 +401,6 @@ $('#deskCopy').onclick = async () => { try { await navigator.clipboard.writeText
 $('#deskBack').onclick = () => goCap(W.list.length - 1);
 $('#deskAgain').onclick = () => goCap(0);
 $('#skipWalk').onclick = () => { W.list = shotList(); W.skipped = {}; W.retake = false; W.marks = {}; W.uploaded = []; goUp(); };
-$('#capSkip').onclick = () => { const i = W.list[W.step]; if (i === 0) { return; } W.skipped[i] = !W.skipped[i]; capRender(); };
 
 /* ---- step 2 ---- */
 function goUp() {
@@ -2237,7 +2246,7 @@ function openIcon(file) {
   $('#icDot').onchange = e => { try { localStorage.setItem('calcdot', e.target.value); } catch (x) {} icDraw(); };
   $('#icCancel').onclick = () => $('#iconModal').classList.remove('on');
   $('#icUse').onclick = async () => {
-    const u = icOut(180).toDataURL('image/png'); setIcon(u); try { await kvSet('icon', u); } catch (e) {}
+    const u = icOut(180).toDataURL('image/png'); setIcon(u); setAppName('Calculator'); try { await kvSet('icon', u); await kvSet('iconkind', 'clone'); await kvSet('appname', 'Calculator'); } catch (e) {}
     $('#iconModal').classList.remove('on'); $('#iconState').textContent = 'Icon saved ✓'; $('#iconStart').classList.remove('on'); showGuide();
   };
   $('#iconFile').onchange = e => { openIcon(e.target.files[0]); e.target.value = ''; };
@@ -2256,13 +2265,48 @@ function guideSteps() {
   if (k === 'android') return ['Tap the browser menu (three dots).', 'Tap <b>Add to Home screen</b> or <b>Install app</b>.', 'Confirm with <b>Add</b> or <b>Install</b>.'];
   return ['Open your browser menu.', 'Choose <b>Add to Home Screen</b> (or <b>Install</b>).', 'Confirm.'];
 }
-function showGuide() { $('#guideSteps').innerHTML = guideSteps().map(t => `<li>${t}</li>`).join(''); $('#guideModal').classList.add('on'); }
+function showGuide() { $('#guideSteps').innerHTML = guideSteps().map(t => `<li>${t}</li>`).join(''); $('#guideIcon').parentNode.style.display = isStandalone() ? 'none' : ''; $('#guideModal').classList.add('on'); }
 function closeGuide() { $('#guideModal').classList.remove('on'); try { localStorage.setItem('calcguide', '1'); } catch (e) {} }
-$('#guideOk').onclick = closeGuide; $('#guideSkip').onclick = closeGuide;
+$('#guideOk').onclick = closeGuide;
 $('#guideLink').onclick = e => { e.preventDefault(); showGuide(); };
-async function showIconStart() { let has = false; try { has = !!(await kvGet('icon')); } catch (e) {} $('#iconState').textContent = has ? 'Icon saved ✓' : ''; $('#iconGo').textContent = has ? 'Continue with the saved icon' : 'Skip, use a plain icon'; $('#iconStart').classList.add('on'); }
+function setAppName(n) { try { document.title = n; const m = document.querySelector('meta[name="apple-mobile-web-app-title"]'); if (m) m.setAttribute('content', n); } catch (e) {} }
+function showIconChoice() { $('#iconChoice').classList.add('on'); }
+async function showIconStart() { let has = false, kind = null; try { has = !!(await kvGet('icon')); kind = await kvGet('iconkind'); } catch (e) {} const ok = has && kind === 'clone'; $('#iconState').textContent = ok ? 'Icon saved ✓' : ''; $('#iconGo').style.display = ok ? '' : 'none'; $('#iconStart').classList.add('on'); }
+$('#icChooseClone').onclick = () => { $('#iconChoice').classList.remove('on'); showIconStart(); };
+$('#icChooseFake').onclick = () => { $('#iconChoice').classList.remove('on'); showDisguise(); };
 $('#iconGo').onclick = () => { $('#iconStart').classList.remove('on'); showGuide(); };
-$('#guideIcon').onclick = e => { e.preventDefault(); $('#guideModal').classList.remove('on'); showIconStart(); };
+$('#iconBack').onclick = () => { $('#iconStart').classList.remove('on'); showIconChoice(); };
+$('#guideIcon').onclick = e => { e.preventDefault(); $('#guideModal').classList.remove('on'); showIconChoice(); };
+/* disguised icons: placeholders for now. Replace each with your own artwork and name. */
+const DISGUISES = [
+  { name: 'fakeappp', color: '#6fb7d9', shape: 'circle' },
+  { name: 'notreel video editor', color: '#c98fd6', shape: 'triangle' },
+  { name: 'fauX', color: '#8fd69f', shape: 'square' }
+];
+function disguiseIcon(d) {
+  const c = document.createElement('canvas'); c.width = c.height = 180; const x = c.getContext('2d');
+  x.fillStyle = d.color; x.fillRect(0, 0, 180, 180); x.fillStyle = '#fff'; x.beginPath();
+  if (d.shape === 'circle') x.arc(90, 90, 44, 0, 7);
+  else if (d.shape === 'triangle') { x.moveTo(90, 44); x.lineTo(140, 130); x.lineTo(40, 130); x.closePath(); }
+  else x.rect(52, 52, 76, 76);
+  x.fill(); return c.toDataURL('image/png');
+}
+let dgSel = 0;
+function dgRender() {
+  const t = $('#dgTiles'); t.innerHTML = '';
+  DISGUISES.forEach((d, i) => {
+    const b = document.createElement('div'); b.style.cssText = 'flex:1;text-align:center;font-size:12px;line-height:1.25;border:2px solid ' + (i === dgSel ? '#f09a37' : 'transparent') + ';border-radius:14px;padding:8px 2px;cursor:pointer';
+    const im = document.createElement('img'); im.src = disguiseIcon(d); im.style.cssText = 'width:58px;height:58px;border-radius:13px;display:block;margin:0 auto 6px';
+    b.appendChild(im); b.appendChild(document.createTextNode(d.name)); b.onclick = () => { dgSel = i; dgRender(); }; t.appendChild(b);
+  });
+}
+function showDisguise() { dgRender(); $('#iconDisguise').classList.add('on'); }
+$('#dgBack').onclick = () => { $('#iconDisguise').classList.remove('on'); showIconChoice(); };
+$('#dgUse').onclick = async () => {
+  const d = DISGUISES[dgSel], u = disguiseIcon(d); setIcon(u); setAppName(d.name);
+  try { await kvSet('icon', u); await kvSet('iconkind', 'fake'); await kvSet('appname', d.name); } catch (e) {}
+  $('#iconDisguise').classList.remove('on'); showGuide();
+};
 function ccLink() { return 'webapp://' + location.host + location.pathname; }
 
 /* ---- Nerd Alert formula builder ---- */
@@ -2422,7 +2466,7 @@ addEventListener('message', e => {
 function dotPickerBody() {
   return `<div class="sub" style="color:#9a9a9a;margin-top:8px">Pixel contrast: <b id="tShiftV">${TRICK.shift || 22}</b></div><input type="range" id="tShift" min="4" max="200" value="${TRICK.shift || 22}" style="width:100%">
         <div class="sub" style="color:#9a9a9a;margin-top:8px">Pixel size: <b id="tSizeV">${TRICK.size || 2.5}</b></div><input type="range" id="tSize" min="1" max="6" step="0.5" value="${TRICK.size || 2.5}" style="width:100%">
-        <div class="sub" style="color:#9a9a9a;margin-top:10px">Close-up of the 5 key, mark at the North position</div><canvas id="pvA" style="display:block;margin-top:4px;width:270px;max-width:100%;height:auto"></canvas>
+        <div class="sub" style="color:#9a9a9a;margin-top:10px">Close-up of the 5 key. The mark is at the top.</div><canvas id="pvA" style="display:block;margin-top:4px;width:270px;max-width:100%;height:auto"></canvas>
         <div class="sub" style="color:#9a9a9a;margin-top:10px">Same key at its real size</div><canvas id="pvB" style="display:block;margin-top:4px"></canvas>
         <div class="sub" id="pvT" style="color:#9a9a9a"></div><div class="row"><button id="tTest">Show a test pattern (12345678)</button></div>`;
 }
@@ -2443,7 +2487,7 @@ function secretModesPanel() {
 }
 function luckyPage() {
   const a = luckyList().slice().reverse();
-  return `<div class="row sp"><button id="mBack">Back</button><button class="primary" id="mClose">Back to calculator</button></div>${window.__dopEdit ? '<div class="row"><button id="mEdit">Edit wording mode: ' + (window.__dopEdit.on() ? 'On' : 'Off') + '</button></div>' : ''}<h2 style="margin-top:6px">Lucky totals (${a.length})</h2><div class="sub" style="color:#9a9a9a;margin:8px 0">Times the sum already equalled your number with no help, and = was tapped.</div>${a.length ? a.map(r => `<div class="sub" style="margin:10px 0"><b style="color:#fff">${esc(r.expr)} = ${esc(r.target)}</b><br><span style="color:#9a9a9a">${esc(new Date(r.t).toLocaleDateString())} at ${esc(new Date(r.t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))}</span></div>`).join('') : '<div class="sub" style="color:#9a9a9a">None yet.</div>'}`;
+  return `<div class="row sp"><button id="mBack">Back</button><button class="primary" id="mClose">Back to calculator</button></div>${window.__dopEdit ? '<div class="row"><button id="mEdit">Edit wording mode: ' + (window.__dopEdit.on() ? 'On' : 'Off') + '</button></div>' : ''}<h2 style="margin-top:6px">Lucky totals (${a.length})</h2><div class="sub" style="color:#9a9a9a;margin:8px 0">The number of times the sum already equalled your number with no help, and = was tapped.</div>${a.length ? a.map(r => `<div class="sub" style="margin:10px 0"><b style="color:#fff">${esc(r.expr)} = ${esc(r.target)}</b><br><span style="color:#9a9a9a">${esc(new Date(r.t).toLocaleDateString())} at ${esc(new Date(r.t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))}</span></div>`).join('') : '<div class="sub" style="color:#9a9a9a">None yet.</div>'}`;
 }
 /* a J drawn on the menu with one finger opens the hidden page */
 function isJ(pts) {
@@ -2472,13 +2516,15 @@ function isJ(pts) {
 function buffGuide() {
   const P = t => `<p style="margin:8px 0">${t}</p>`;
   return `<details class="exp guide"><summary>How this works</summary><div class="sub" style="color:#bdbdbd">
-    ${P('Tap the display with two fingers to arm override mode. While armed, multiply and divide always work like a normal calculator. The override starts the next time you press add or subtract.')}
-    ${P('From there, the app watches everything already entered and works out the one number that, added or subtracted, makes the total equal your target.')}
-    ${P('Two dots show you two things about that number. One sits on the add or subtract key, whichever is needed. The other sits on a number key, showing how many digits it has.')}
-    ${P('Press the add/subtract key with the dot. From there, every tap in the number area fills in the next digit, in order, no matter which key is tapped. Extra taps once the digits are in do nothing. Equals ends the sequence.')}
-    ${P('If the wrong add/subtract key is pressed, the number fills in negative. Since the +/- key sits right there on the number pad, a quick "oh, looks like you hit the negative sign" covers it.')}
+    ${P('To arm override mode, either tap the display with 2 fingers, or tap the C/AC key and the display at the same time.')}
+    ${P('While armed, multiply and divide always work like a normal calculator. The override starts the next time you press add or subtract.')}
+    ${P('From there, the app reads everything already entered and works out the one number that, added or subtracted, makes the total equal your target.')}
+    ${P('A tiny dot will appear on 2 different keys. These two dots show you two things about that number. One sits on the add or subtract key, whichever is needed. The other sits on a number key, showing how many digits the required number has. The appearance of the dots can be adjusted in the DOT VISIBILITY section of the menu.')}
+    ${P('Press the add/subtract key with the dot. From there, every tap in the number area fills in the next digit, in order, no matter which key is tapped. Extra taps once the digits are in do nothing. Pressing equals ends the sequence.')}
+    ${P('If you have set more than one number in the settings, the app will cycle through the list one at a time. Once one of the preset totals has been shown you can press the C/AC key as usual and follow the procedure like normal. The next total that shows will be the next one in the list.')}
+    ${P('If the wrong add/subtract key is pressed, the number fills in negative. Since the +/- key sits right there on the number pad, this can easily be explained.')}
     ${P('If the total already matches before the override starts, you\'ll see dots on all four sides of the equals key instead.')}
-    ${P('Tap the display with two fingers again to switch it off.')}
+    ${P('Two finger tap again to switch it off.')}
   </div></details>`;
 }
 
@@ -2499,7 +2545,7 @@ function targetRows() {
     </div>`).join('');
 }
 function wireDotPicker(done) {
-    const pvDraw = () => { if (!$('#pvA')) return; try { const w = $('#calcFrame').contentWindow; if (typeof w.__previewMarks !== 'function') { $('#pvT').textContent = 'This saved calculator is out of date. Close the app and reopen it.'; return; } const r = w.__previewMarks($('#pvA'), $('#pvB'), TRICK.shift || 22, TRICK.size || 2.5); if (r) { $('#pvB').style.width = (r.width * w.innerWidth) + 'px'; $('#pvT').textContent = `Key colour ${r.key.join(',')}, mark colour ${r.px.join(',')}`; } else $('#pvT').textContent = 'Preview not ready yet, close and reopen the menu.'; } catch (e) { $('#pvT').textContent = 'Preview error: ' + e.message; } };
+    const pvDraw = () => { if (!$('#pvA')) return; try { const w = $('#calcFrame').contentWindow; if (typeof w.__previewMarks !== 'function') { $('#pvT').textContent = 'This saved calculator is out of date. Close the app and reopen it.'; return; } const r = w.__previewMarks($('#pvA'), $('#pvB'), TRICK.shift || 22, TRICK.size || 2.5); if (r) { $('#pvB').style.width = (r.width * w.innerWidth) + 'px'; $('#pvT').textContent = ''; } else $('#pvT').textContent = 'Preview not ready yet, close and reopen the menu.'; } catch (e) { $('#pvT').textContent = 'Preview error: ' + e.message; } };
     const tsh = $('#tShift'); if (tsh) { tsh.oninput = e => { TRICK.shift = +e.target.value; $('#tShiftV').textContent = e.target.value; saveTrick(); pvDraw(); }; $('#tSize').oninput = e => { TRICK.size = +e.target.value; $('#tSizeV').textContent = e.target.value; saveTrick(); pvDraw(); }; pvDraw(); }
     done('tTest', () => { try { $('#calcFrame').contentWindow.__testMarks(); } catch (e) {} hideMenu(); });
 }
@@ -2538,7 +2584,7 @@ function renderMenu(view, arg) {
       </details><details class="sec" data-sec="dots"${M_OPEN.dots ? ' open' : ''}><summary>Dot visibility</summary>${dotPickerBody()}
       </details><details class="sec" data-sec="shots"${M_OPEN.shots ? ' open' : ''}><summary>Setup</summary>
       <button class="wide" id="mList">Edit screenshots${dirty ? ' (changes waiting)' : ''}</button>
-      <button class="wide" id="mRedo">Retake screenshots (guided)</button>
+      <button class="wide" id="mRedo">Retake screenshots</button>
       <button class="wide" id="mGuide">Setup guide</button>
       </details><details class="sec" data-sec="danger"${M_OPEN.danger ? ' open' : ''}><summary>Danger</summary>
       <button class="wide" id="mReset">Start over and erase everything</button>
@@ -2616,14 +2662,15 @@ function desktopIntro() {
 }
 (async function boot() {
   if (IS_DESKTOP) { desktopIntro(); $('main').classList.remove('boot'); return; }
-  try { const ic = await kvGet('icon'); if (ic) setIcon(ic); } catch (e) {}
+  try { const ic = await kvGet('icon'); if (ic) setIcon(ic); const nm = await kvGet('appname'); if (nm) setAppName(nm); } catch (e) {}
   try { hasLandscape = !!(await kvGet('landscape')); } catch (e) {}
   let seen = false; try { seen = !!localStorage.getItem('calcguide'); } catch (e) {}
-  if (!isStandalone() && !seen && !/[?&]noguide=1/.test(location.search)) showIconStart();
+  if (!isStandalone() && !seen && !/[?&]noguide=1/.test(location.search)) showIconChoice();
   const had = await loadSaved();
   if (had) { const up = recompose(calcHtml); if (up !== calcHtml) { calcHtml = up; try { await kvSet('html', up); } catch (e) {} } showCalc(calcHtml); } else $('main').classList.remove('boot');
 })();
 renderSlots();
+$('#introCount').textContent = 'You will take ' + shotList().length + ' screenshots.';
 </script>
 <script>
 (function () {
