@@ -106,7 +106,7 @@
   <div class="screen" id="s-desk">
     <div class="kick">All done here</div>
     <div class="stepTitle">Complete the setup on your phone</div>
-    <div class="words" id="deskWords">Open this page on your phone, take the screenshots, and upload them there. Scan this to open it. On your phone you will start by choosing your app icon.</div>
+    <div class="words" id="deskWords">Scan this code to open the next page on your phone to proceed with the next step and choose your app icon.</div>
     <div class="row" id="deskQR"></div>
     <div class="urlbox" id="deskUrl"></div>
     <div class="row"><button id="deskCopy">Copy link</button></div>
@@ -241,40 +241,40 @@ const PAD = 2;
 const num = (id, title, how, text) => ({ id, type: 'num', title, how, text, group: null });
 const SLOTS = [
   { id:'rest', type:'rest', group:'Base', title:'Resting calculator', how:'Open Calculator showing 0 (tap AC if needed).', text:'0' },
-  num('t1','Type 0.5813103','Type a zero, the dot, then the digits.','0.5813103'),
-  num('t2','Type 0.0596906','','0.0596906'),
-  num('t3','Type 0.2870197','','0.2870197'),
-  num('l1','Type 123456789','Long number, tests the shrink rule.','123,456,789'),
-  num('l2','Type 12345678901','Type as many digits as still fit on screen without scrolling.','12,345,678,901'),
-  { id:'max', type:'max', title:'Keep typing 1 until it scrolls off the left edge', how:'Tap 1 until the left side fades out, then screenshot. If the calculator stops accepting digits, count them and enter the number below.' },
-  num('d3','Type 1234.5678','','1,234.5678'),
-  num('o1','Type 5 + 2 − 3 × 4 ÷ 1','Do not tap =. The line ends in a 1.','5+2−3×4÷1'),
-  num('n1','Type 5 then tap +/−','','(-5)'),
-  num('n2','Type 5 + 3 then tap +/−','',  '5+(-3)'),
-  num('p1','Type 50 then tap %','','50%'),
-  (() => { const o = num('r1','Type 1 ÷ 3 then tap =','The small grey line above the result is read from this one too. If your phone shows a different number of 3s, that is fine.','0.3333333333'); o.small = '1÷3'; o.v = 'rep'; return o; })(),
-  num('r2','Type 5 ÷ 0 then tap =','','Undefined'),
-  (() => { const o = num('s1','Type 1234567891 × 10 then tap =','The answer switches to scientific notation (it has an e in it). Your phone may show fewer digits, that is fine.','1.234567891e10'); o.small = '1,234,567,891×10'; o.v = 'sci'; return o; })(),
-  (() => { const o = num('s2','Type 1 ÷ 3000000000 then tap =','The answer switches to scientific notation (it has an e in it). Your phone may show fewer digits, that is fine.','3.333333333e-10'); o.small = '1÷3,000,000,000'; o.v = 'sci'; return o; })(),
-  { id:'h1', type:'held', title:'Hold a finger on the 7 key', how:'Screenshot with your other hand while holding.' },
-  { id:'h2', type:'held', title:'Hold a finger on AC (on the 0 screen)', how:'Screenshot with your other hand while holding.' },
-  { id:'h3', type:'held', title:'Hold a finger on ÷', how:'Screenshot with your other hand while holding.' },
-  { id:'h4', type:'held', title:'Hold a finger on =', how:'Screenshot with your other hand while holding.' },
-  { id:'hp1', type:'hist', title:'Hold a finger on the clock icon', how:'Press and hold the clock icon at the top left. Screenshot with your other hand while holding, before anything opens.' },
-  { id:'mode1', type:'hist', title:'Open the calculator type menu', how:'Tap the calculator icon at the top right. Screenshot with the menu open.' },
+  num('t1','0.5813103','Type a zero, the dot, then the digits.','0.5813103'),
+  num('t2','0.0596906','','0.0596906'),
+  num('t3','0.2870197','','0.2870197'),
+  num('l1','123456789','Long number, tests the shrink rule.','123,456,789'),
+  num('l2','12345678901','Type as many digits as still fit on screen without scrolling.','12,345,678,901'),
+  { id:'max', type:'max', title:'Repeated 1\'s', how:'Tap 1 until the left side fades out, then screenshot. If the calculator stops accepting digits, count them and enter the number below.' },
+  num('d3','1234.5678','','1,234.5678'),
+  num('o1','5 + 2 − 3 × 4 ÷ 1','Do not tap =. The line ends in a 1.','5+2−3×4÷1'),
+  num('n1','5 then +/−','','(-5)'),
+  num('n2','5 + 3 then +/−','',  '5+(-3)'),
+  num('p1','50%','','50%'),
+  (() => { const o = num('r1','1 ÷ 3 =','The small grey line above the result is read from this one too. If your phone shows a different number of 3s, that is fine.','0.3333333333'); o.small = '1÷3'; o.v = 'rep'; return o; })(),
+  num('r2','5 ÷ 0 =','','Undefined'),
+  (() => { const o = num('s1','1234567891 × 10 =','The answer switches to scientific notation (it has an e in it). Your phone may show fewer digits, that is fine.','1.234567891e10'); o.small = '1,234,567,891×10'; o.v = 'sci'; return o; })(),
+  (() => { const o = num('s2','1 ÷ 3000000000 =','The answer switches to scientific notation (it has an e in it). Your phone may show fewer digits, that is fine.','3.333333333e-10'); o.small = '1÷3,000,000,000'; o.v = 'sci'; return o; })(),
+  { id:'h1', type:'held', title:'Hold on 7', how:'Screenshot with your other hand while holding.' },
+  { id:'h2', type:'held', title:'Hold on AC (on the 0 screen)', how:'Screenshot with your other hand while holding.' },
+  { id:'h3', type:'held', title:'Hold on ÷', how:'Screenshot with your other hand while holding.' },
+  { id:'h4', type:'held', title:'Hold on =', how:'Screenshot with your other hand while holding.' },
+  { id:'hp1', type:'hist', title:'Hold on clock icon', how:'Press and hold the clock icon at the top left. Screenshot with your other hand while holding, before anything opens.' },
+  { id:'mode1', type:'hist', title:'Open the Calculator Mode menu.', how:'Tap the calculator icon at the top right. Screenshot with the menu open.' },
   { id:'hist1', type:'hist', group:'History', title:'Open History, as it first appears', how:'Tap the clock icon at the top left. Screenshot straight away, before dragging the sheet.' },
   { id:'hist2', type:'hist', group:'History', title:'Drag History up to full screen', how:'Drag the top of the sheet upward until it fills the screen, then screenshot.' },
-  { id:'hist3', type:'hist', group:'History', title:'Scroll down to where one date heading meets the next', how:'Scroll the History list until a heading such as Yesterday or a month name sits in the middle of the screen, with rows above and below it. Screenshot.' },
-  { id:'hp2', type:'hist', group:'History', title:'Hold a finger on Edit', how:'Open History and press and hold the Edit button. Screenshot with your other hand while holding.' },
-  { id:'hp3', type:'hist', group:'History', title:'Hold a finger on the close button', how:'Still in History, press and hold the X. Screenshot with your other hand while holding.' },
+  { id:'hist3', type:'hist', group:'History', title:'Scroll down to next date heading', how:'Scroll the History list until a heading such as Yesterday or a month name sits in the middle of the screen, with rows above and below it. Screenshot.' },
+  { id:'hp2', type:'hist', group:'History', title:'Hold Edit', how:'Open History and press and hold the Edit button. Screenshot with your other hand while holding.' },
+  { id:'hp3', type:'hist', group:'History', title:'Hold Close', how:'Still in History, press and hold the X. Screenshot with your other hand while holding.' },
   { id:'hp4', type:'hist', group:'History', title:'A freshly typed sum, highlighted', how:'Do any sum, then open History. The newest row is highlighted. Screenshot it.' },
   { id:'lrest', type:'lrest', group:'Landscape', title:'Resting calculator, landscape', how:'Rotate your phone sideways. Open Calculator showing 0 (tap AC if needed).', text:'0' },
-  (() => { const o = num('lr1','Type 1 ÷ 3 then tap =, landscape','Stay rotated sideways. The small grey line above the result is read from this one too.','0.3333333333'); o.small = '1÷3'; o.v = 'rep'; o.type = 'lnum'; o.group = 'Landscape'; return o; })(),
-  { id:'lc1', type:'lc1', group:'Landscape', title:'Type any digit, landscape', how:'Stay rotated sideways. Clear with AC, then type a digit (don’t press =). AC should now show as C. Screenshot before pressing anything else.', text:'6' },
-  { id:'lh1', type:'lheld', group:'Landscape', title:'Hold a finger on a digit key, landscape', how:'Stay rotated sideways. Screenshot with your other hand while holding.' },
-  { id:'lh2', type:'lheld', group:'Landscape', title:'Hold a finger on AC, landscape', how:'Stay rotated sideways (display should show 0). Screenshot with your other hand while holding.' },
-  { id:'lh3', type:'lheld', group:'Landscape', title:'Hold a finger on ÷, landscape', how:'Stay rotated sideways. Screenshot with your other hand while holding.' },
-  { id:'lh4', type:'lheld', group:'Landscape', title:'Hold a finger on =, landscape', how:'Stay rotated sideways. Screenshot with your other hand while holding.' },
+  (() => { const o = num('lr1','1 ÷ 3 =, landscape','Stay rotated sideways. The small grey line above the result is read from this one too.','0.3333333333'); o.small = '1÷3'; o.v = 'rep'; o.type = 'lnum'; o.group = 'Landscape'; return o; })(),
+  { id:'lc1', type:'lc1', group:'Landscape', title:'Any digit, landscape', how:'Stay rotated sideways. Clear with AC, then type a digit (don’t press =). AC should now show as C. Screenshot before pressing anything else.', text:'6' },
+  { id:'lh1', type:'lheld', group:'Landscape', title:'Hold 7, landscape', how:'Stay rotated sideways. Screenshot with your other hand while holding.' },
+  { id:'lh2', type:'lheld', group:'Landscape', title:'Hold AC, landscape', how:'Stay rotated sideways (display should show 0). Screenshot with your other hand while holding.' },
+  { id:'lh3', type:'lheld', group:'Landscape', title:'Hold ÷, landscape', how:'Stay rotated sideways. Screenshot with your other hand while holding.' },
+  { id:'lh4', type:'lheld', group:'Landscape', title:'Hold =, landscape', how:'Stay rotated sideways. Screenshot with your other hand while holding.' },
 ];
 const IDX = id => SLOTS.findIndex(x => x.id === id);
 const withHist = () => true;
@@ -297,7 +297,7 @@ const files = new Array(SLOTS.length).fill(null);
 function renderSlots() {}
 const KEYS = { rest:'AC', l1:'1 2 3 4 5 6 7 8 9', l2:'1 2 3 4 5 6 7 8 9 0 1', max:'1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1', d3:'1 2 3 4 . 5 6 7 8',
   o1:'5 + 2 - 3 * 4 / 1', n1:'5 neg', n2:'5 + 3 neg', p1:'5 0 %', r1:'1 / 3 =', s1:'1 2 3 4 5 6 7 8 9 1 * 1 0 =', s2:'1 / 3 0 0 0 0 0 0 0 0 0 =', r2:'5 / 0 =', h1:'hold:7', h2:'hold:AC', h3:'hold:/', h4:'hold:=',
-  lrest:'AC', lr1:'1 / 3 =', lc1:'6', lh1:'hold:6', lh2:'hold:AC', lh3:'hold:/', lh4:'hold:=' };
+  lrest:'AC', lr1:'1 / 3 =', lc1:'6', lh1:'hold:7', lh2:'hold:AC', lh3:'hold:/', lh4:'hold:=' };
 const keysFor = s => (isT(s) && s.text) ? Array.from(s.text).join(' ') : KEYS[s.id] || ((s.title.match(/\d{6,}/) || [''])[0].split('').join(' '));
 const TOKWORD = { '+':'+', '-':'−', '*':'×', '/':'÷', '=':'=', neg:'+/−', back:'⌫', '%':'%', '.':'. (the dot)', AC:'AC' };
 const TOKLAB = { '+':'+', '-':'−', '*':'×', '/':'÷', neg:'±', back:'⌫' };
@@ -305,23 +305,25 @@ function wordsFor(s) {
   const k = keysFor(s).split(' ');
   if (s.id === 'rest') return 'Open Calculator in portrait. Tap AC until it shows 0. Take a screenshot.';
   if (s.id === 'max') return 'Open Calculator and keep tapping 1 until the left side of the number fades out or it stops accepting digits. Take a screenshot.';
-  if (s.id === 'lrest') return 'Rotate your phone sideways so Calculator is in landscape. Tap AC until it shows 0. Take a screenshot.';
-  if (s.id === 'lr1') return 'Stay rotated sideways. Clear with AC, then tap 1, then ÷, then 3, then =. Take a screenshot.';
+  if (s.id === 'lrest') return 'In landscape, tap AC until it shows 0. Take a screenshot.';
+  if (s.id === 'lr1') return 'Stay rotated sideways. Clear with AC, then type 1 ÷ 3, then =. Take a screenshot.';
   if (s.id === 'lc1') return 'Stay rotated sideways. Clear with AC, then tap a digit (don’t tap =). AC should now show as C. Take a screenshot.';
   if (s.id === 'hp1') return 'Open Calculator showing 0. Press and hold the clock icon at the top left, and while you keep holding it, take a screenshot with your other hand. Do not let go until the screenshot is taken.';
   if (s.id === 'hist1') return 'Back in portrait. Tap the clock icon at the top left to open History. Take a screenshot straight away, while the sheet is still only covering part of the screen.';
   if (s.id === 'hist2') return 'With History still open, drag the top of the sheet upward until it fills the whole screen. Take a screenshot.';
-  if (s.id === 'hist3') return 'With History still full screen, scroll down until one date heading (Yesterday, Previous 7 Days, a month, a year) sits in the middle of the screen with rows above and below it. Take a screenshot. This is the only shot that shows the spacing around a heading.';
+  if (s.id === 'hist3') return 'With History still full screen, scroll down until one date heading (Yesterday, Previous 7 Days, a month, a year) sits in the middle of the screen with rows above and below it. Take a screenshot.';
   if (s.id === 'hp2') return 'Open History, then press and hold the Edit button at the top left of the sheet. While you keep holding it, take a screenshot with your other hand.';
   if (s.id === 'hp3') return 'Still in History, press and hold the round X button at the top right of the sheet. While you keep holding it, take a screenshot with your other hand.';
   if (s.id === 'hp4') return 'Close History. Do any sum and press =. Open History again: the sum you just did sits at the top with a lighter background. Take a screenshot.';
   if (s.id === 'mode1') return 'Open Calculator showing 0, then tap the calculator icon at the top right. A short menu opens (Basic, Scientific, and so on). Take a screenshot with it open.';
   if (k[0].startsWith('hold:')) { const t = k[0].slice(5); const rotated = s.group === 'Landscape' ? 'Stay rotated sideways. ' : ''; return `${rotated}Press and hold the ${TOKWORD[t] || t} key. While you keep holding it, take a screenshot with your other hand. ${(s.id === 'h2' || s.id === 'lh2') ? 'The display should show 0.' : ''}`; }
-  const list = k.map(t => TOKWORD[t] || t).join(', then ');
+  const LAST = { '=': '=', neg: '+/−', '%': '%' }; const KW = t => t === '.' ? '.' : (TOKWORD[t] || t); const lastK = k[k.length - 1]; const list = (k.length > 1 && LAST[lastK]) ? k.slice(0, -1).map(KW).join(' ') + ', then ' + LAST[lastK] : k.map(KW).join(' ');
   const noEq = !k.includes('=');
-  let w = `Open Calculator and clear it with AC. Tap ${list}. ${noEq && /^o|^s/.test(s.id) ? 'Do not tap =. ' : ''}Take a screenshot.`;
-  if (isT(s)) w = `Open Calculator and clear it with AC. Type a zero, the dot, then the digits: ${s.text}. Take a screenshot.`;
-  if (s.id === 'l1' || s.id === 'l2') w = `Open Calculator and clear it with AC. Type ${k.join('')}. ${s.how || ''} Take a screenshot.`;
+  let w = `Open Calculator and clear it with AC. Type ${list}. ${noEq && /^o|^s/.test(s.id) ? 'DO NOT tap =. ' : ''}Take a screenshot.`;
+  if (isT(s)) w = `Open Calculator and clear it with AC. Type ${Array.from(s.text).join(' ')}. Take a screenshot.`;
+  if (s.id === 'l1' || s.id === 'l2') w = `Open Calculator and clear it with AC. Type ${k.join(' ')}. ${s.id === 'l2' ? 'Type as many digits as will fit on the screen. ' : ''}Take a screenshot.`;
+  if (s.id === 's1') w = 'Open Calculator and clear it with AC. Type 1 2 3 4 5 6 7 8 9 1, then ×, then 1 0, then =. Take a screenshot.';
+  if (s.id === 's2') w = 'Open Calculator and clear it with AC. Type 1 ÷ 3 0 0 0 0 0 0 0 0 0 (that\'s 9 zeros), then =. Take a screenshot.';
   return w;
 }
 const shouldFor = s => s.type === 'rest' ? 'The calculator showing 0.' : s.type === 'held' ? 'A key looks lighter because it is being held down.' : s.type === 'max' ? 'A long row of 1s with the left side faded out.' : s.type === 'lrest' ? 'The calculator showing 0, rotated sideways.' : s.type === 'lc1' ? 'A digit showing, with AC now reading as C, rotated sideways.' : s.type === 'lheld' ? 'A key looks lighter because it is being held down, rotated sideways.' : s.id === 'hp1' ? 'The clock icon looking lighter because it is being held down.' : s.id === 'hist1' ? 'The History sheet covering roughly the lower half of the screen.' : s.id === 'hist2' ? 'The History sheet filling the whole screen.' : s.id === 'hist3' ? 'A date heading partway down the list, with rows above and below it.' : s.id === 'hp2' ? 'The Edit button looking lighter because it is being held.' : s.id === 'hp3' ? 'The X button looking lighter because it is being held.' : s.id === 'hp4' ? 'The newest row sitting on a lighter band.' : s.id === 'mode1' ? 'A small menu open near the top right, with Basic ticked.' : null;
