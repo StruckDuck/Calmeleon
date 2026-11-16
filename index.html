@@ -39,6 +39,7 @@
   .demo .kg .stk{stroke:#fff}.demo .kg.tap .stk,.demo .kg.hold .stk{stroke:#111}
   .rotbox{width:calc(100% + 32px);height:460px;margin:8px -16px 4px;position:relative;overflow:hidden}
   #rotStage{position:absolute;inset:0}
+  html.desk #rotL{width:487px}
   .rotc .kg path{fill:#fff}
   .rotc{position:absolute;left:50%;top:50%;background:#000;border:1px solid #333;display:block}
   #rotP{width:232px;height:auto;border-radius:16px;animation:rotP 6s infinite}
@@ -411,7 +412,7 @@ function padMarkup(C, vb) {
 function mountDemo(keysStr, land) {
   clearTimeout(demoT);
   const C = land ? CFG_L : CFG_P, sv = $('#demoSvg');
-  sv.setAttribute('viewBox', C.vb); sv.innerHTML = padMarkup(C); sv.parentNode.style.width = land ? '380px' : '';
+  sv.setAttribute('viewBox', C.vb); sv.innerHTML = padMarkup(C); sv.parentNode.style.width = land ? (IS_DESKTOP ? '487px' : '380px') : '';
   const els = {};
   sv.querySelectorAll('.kg').forEach(g => { els[g.dataset.k] = { set className(v) { g.setAttribute('class', 'kg' + (v ? ' ' + v : '')); } }; });
   const disp = sv.querySelector('#demoDisp'), cap = $('#demoCap');
@@ -442,6 +443,7 @@ function mountRot() {
 /* ---- desktop reference view: same steps, no uploading; finish on the phone ---- */
 const VIEW = (location.search.match(/[?&]view=(phone|desktop)/) || [])[1];
 const IS_DESKTOP = VIEW ? VIEW === 'desktop' : !!(window.matchMedia && matchMedia('(hover: hover) and (pointer: fine)').matches && !(navigator.standalone));
+if (IS_DESKTOP) document.documentElement.classList.add('desk');
 const pageUrl = () => location.href.split('#')[0].split('?')[0];
 /* ---- step 1 ---- */
 const expected = () => W.list.filter(i => !W.skipped[i]);
