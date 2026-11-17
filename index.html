@@ -2956,7 +2956,7 @@ function showDateDlg() {
   const takeDelay = () => { const e = document.getElementById('xdDelay'); if (e) XDLG.d.xDelay = Math.max(-1440, Math.min(1440, Math.round(+e.value) || 0)); };
   o.querySelectorAll('[data-dk]').forEach(btn => btn.onclick = () => { takeDelay(); const k = btn.dataset.dk, v = btn.dataset.dv; XDLG.d[k] = (k === 'xYear' || k === 'xClock') ? +v : v; showDateDlg(); });
   document.getElementById('xdNo').onclick = () => { XDLG = null; showDateDlg(); };
-  document.getElementById('xdOk').onclick = () => { takeDelay(); ensureTargets(); const st = Object.assign({ t: 'd' }, XDLG.d); if (XDLG.i === null) TRICK.xSteps.push(st); else TRICK.xSteps[XDLG.i] = st; XDLG = null; saveTrick(); showDateDlg(); renderMenu('home'); };
+  document.getElementById('xdOk').onclick = () => { takeDelay(); ensureTargets(); const st = Object.assign({ t: 'd' }, XDLG.d); if (XDLG.i === null) { if (TRICK.xSteps.length === 1 && TRICK.xSteps[0].t === 'n' && !String(TRICK.xSteps[0].v || '').trim()) TRICK.xSteps = []; TRICK.xSteps.push(st); TRICK.xIdx = Math.min(TRICK.xIdx, TRICK.xSteps.length - 1); } else TRICK.xSteps[XDLG.i] = st; XDLG = null; saveTrick(); showDateDlg(); renderMenu('home'); };
 }
 function wireDotPicker(done) {
     const pvDraw = () => { if (!$('#pvA')) return; try { const w = $('#calcFrame').contentWindow; if (typeof w.__previewMarks !== 'function') { $('#pvT').textContent = 'This saved calculator is out of date. Close the app and reopen it.'; return; } const r = w.__previewMarks($('#pvA'), $('#pvB'), TRICK.shift || 200, TRICK.size || 2); if (r) { $('#pvB').style.width = (r.width * w.innerWidth) + 'px'; $('#pvT').textContent = ''; } else $('#pvT').textContent = 'Preview not ready yet, close and reopen the menu.'; } catch (e) { $('#pvT').textContent = 'Preview error: ' + e.message; } };
@@ -3009,8 +3009,9 @@ function renderMenu(view, arg) {
       if (TRICK.xIdx > i) TRICK.xIdx--; if (TRICK.xIdx >= TRICK.xSteps.length) TRICK.xIdx = 0;
       saveTrick(); renderMenu('home');
     });
-    done('xaN', () => { ensureTargets(); TRICK.xSteps.push({ t: 'n', v: '' }); saveTrick(); renderMenu('home'); const f = m.querySelectorAll('[data-xt]'); const l = f[f.length - 1]; if (l) { l.focus(); l.scrollIntoView({ block: 'center' }); } });
-    done('xa9', () => { ensureTargets(); TRICK.xSteps.push({ t: '9' }); saveTrick(); renderMenu('home'); });
+    const blank = () => TRICK.xSteps.length === 1 && TRICK.xSteps[0].t === 'n' && !String(TRICK.xSteps[0].v || '').trim();   // the empty starter row, replaced by the first real step
+    done('xaN', () => { ensureTargets(); if (!blank()) TRICK.xSteps.push({ t: 'n', v: '' }); saveTrick(); renderMenu('home'); const f = m.querySelectorAll('[data-xt]'); const l = f[f.length - 1]; if (l) { l.focus(); l.scrollIntoView({ block: 'center' }); } });
+    done('xa9', () => { ensureTargets(); if (blank()) TRICK.xSteps = []; TRICK.xSteps.push({ t: '9' }); TRICK.xIdx = Math.min(TRICK.xIdx, TRICK.xSteps.length - 1); saveTrick(); renderMenu('home'); });
     done('xaD', () => { XDLG = { i: null, d: { xShow: 'date', xFmt: 'us', xYear: 4, xClock: 12, xDelay: 0 } }; showDateDlg(); });
     m.querySelectorAll('[data-xte]').forEach(b => b.onclick = () => { ensureTargets(); const i = +b.dataset.xte, st = TRICK.xSteps[i]; if (st.t !== 'd') return; XDLG = { i, d: { xShow: st.xShow, xFmt: st.xFmt, xYear: st.xYear, xClock: st.xClock, xDelay: st.xDelay } }; showDateDlg(); });
     done('xtReset', () => { TRICK.xIdx = 0; saveTrick(); renderMenu('home'); });
