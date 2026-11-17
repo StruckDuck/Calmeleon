@@ -1203,21 +1203,24 @@ function fitGlass(half, rest, geo, dpr) {
   const o = [0, 1, 2].map(c => mT[c] - k * mB[c]);
   const alpha = 1 - k, gray = o.map(v => Math.max(0, Math.min(255, v / alpha)));
   // what the live glass will draw, and what is left over
-  const rw = rx1 - rx0, rh = ry1 - ry0, plus = new Uint8ClampedArray(rw * rh * 4), minus = new Uint8ClampedArray(rw * rh * 4);
+  const ext = Math.min(60, ry0), ryT = ry0 - ext, rw = rx1 - rx0, rh = ry1 - ryT, plus = new Uint8ClampedArray(rw * rh * 4), minus = new Uint8ClampedArray(rw * rh * 4), model = [];
   let e0 = 0, e1 = 0, ne = 0;
   for (let c = 0; c < 3; c++) {
     const pred = new Float32Array(w * h), res = new Float32Array(w * h);
     for (let i = 0; i < w * h; i++) { pred[i] = Math.max(0, Math.min(255, alpha * gray[c] + k * B[c][i])); res[i] = T.p[c][i] - pred[i]; }
     const sres = gFill(res, fg, w, h, 3);
+    const mdl = new Float32Array(w * h); for (let i = 0; i < w * h; i++) mdl[i] = Math.max(0, Math.min(255, pred[i] + sres[i])); model.push(mdl);
     for (let y = 0; y < rh; y++) for (let x = 0; x < rw; x++) {
-      const i = (ry0 + y) * w + rx0 + x, r = sres[i], q = (y * rw + x) * 4;
+      // above the sheet's measured top the last row is carried up and faded out
+      const yy = ryT + y, fade = yy >= ry0 ? 1 : 0.5 * (1 + Math.cos(Math.PI * (ry0 - yy) / ext));
+      const i = Math.max(yy, ry0) * w + rx0 + x, r = sres[i] * fade, q = (y * rw + x) * 4;
       plus[q + c] = Math.max(0, Math.min(255, Math.round(r)));
       minus[q + c] = 255 - Math.max(0, Math.min(255, Math.round(-r)));
       plus[q + 3] = 255; minus[q + 3] = 255;
     }
     for (let y = ry0 + m; y < ry1 - m; y++) for (let x = rx0 + m; x < rx1 - m; x++) { const i = y * w + x; if (fg[i]) continue; e0 += res[i] * res[i]; const r2 = res[i] - Math.round(sres[i]); e1 += r2 * r2; ne++; }
   }
-  return { blur: GLASS_PT, alpha, gray: gray.map(v => Math.round(v * 10) / 10), k, ds, x: rx0 * ds, y: ry0 * ds, w: rw, h: rh, plus, minus,
+  return { blur: GLASS_PT, alpha, gray: gray.map(v => Math.round(v * 10) / 10), k, ds, x: rx0 * ds, y: ryT * ds, w: rw, h: rh, plus, minus, model, lw: w, lh: h,
            rmsLive: Math.sqrt(e0 / ne), rmsFixed: Math.sqrt(e1 / ne) };
 }
 // the sheet is outlined by a thin bright stroke whatever the transparency setting, so trace that
@@ -1702,11 +1705,18 @@ async function buildHistory(files, W, H, log, press) {
       if (g) {
         glass = { alpha: +g.alpha.toFixed(4), gray: g.gray, ds: g.ds, x: g.x, y: g.y, w: g.w, h: g.h, plus: rgbaToB64(g.w, g.h, g.plus), minus: rgbaToB64(g.w, g.h, g.minus) };
         // the header band keeps only what is really on it (handle, Edit, close) and is otherwise see-through, so the glass and the keys behind it stay put while the sheet moves
-        { const pad = 8, fe = 4, boxes = [edit, close, handle].filter(Boolean), bw2 = chrome.w, bh2 = chrome.h, src = cropRGBA(half, insetHalf, topHalf, bw2, bh2).data, out = new Uint8ClampedArray(src);
+        { const pad = 8, fe = 4, boxes = [edit, close, handle].filter(Boolean), bw2 = chrome.w, bh2 = chrome.h, src = cropRGBA(half, insetHalf, topHalf, bw2, bh2).data, out = new Uint8ClampedArray(bw2 * bh2 * 4);
+          const M = g.model, lw = g.lw, lh = g.lh, ds = g.ds;
+          const samp = (c, X, Y) => { const fx = Math.max(0, Math.min(lw - 1, X / ds - 0.5)), fy = Math.max(0, Math.min(lh - 1, Y / ds - 0.5)), x0 = Math.floor(fx), y0 = Math.floor(fy), x1 = Math.min(lw - 1, x0 + 1), y1 = Math.min(lh - 1, y0 + 1), tx = fx - x0, ty = fy - y0, P = M[c];
+            return (P[y0 * lw + x0] * (1 - tx) + P[y0 * lw + x1] * tx) * (1 - ty) + (P[y1 * lw + x0] * (1 - tx) + P[y1 * lw + x1] * tx) * ty; };
           for (let y = 0; y < bh2; y++) for (let x = 0; x < bw2; x++) {
-            let a = 0; const X = insetHalf + x + 0.5, Y = topHalf + y + 0.5;
-            for (const b of boxes) { const cx = b.x + b.w / 2, cy = b.y + b.h / 2, hw = b.w / 2 + pad, hh = b.h / 2 + pad, r = Math.min(hw, hh), qx = Math.max(Math.abs(X - cx) - (hw - r), 0), qy = Math.max(Math.abs(Y - cy) - (hh - r), 0), d = Math.hypot(qx, qy) - r; a = Math.max(a, Math.max(0, Math.min(1, 0.5 - d / fe))); }
-            out[(y * bw2 + x) * 4 + 3] = Math.round(a * 255);
+            let m = 0; const X = insetHalf + x + 0.5, Y = topHalf + y + 0.5;
+            for (const b of boxes) { const cx = b.x + b.w / 2, cy = b.y + b.h / 2, hw = b.w / 2 + pad, hh = b.h / 2 + pad, r = Math.min(hw, hh), qx = Math.max(Math.abs(X - cx) - (hw - r), 0), qy = Math.max(Math.abs(Y - cy) - (hh - r), 0), d = Math.hypot(qx, qy) - r; m = Math.max(m, Math.max(0, Math.min(1, 0.5 - d / fe))); }
+            if (m <= 0) continue;
+            // what the glass alone would show here, against what the screenshot shows: the difference is the button's own veil, drawn as black or white with an alpha so the glass behind it stays live
+            const i = (y * bw2 + x) * 4, T = src[i] + src[i + 1] + src[i + 2], B = samp(0, X, Y) + samp(1, X, Y) + samp(2, X, Y), d = T - B;
+            if (d < 0) { out[i + 3] = Math.round(255 * m * Math.min(1, -d / Math.max(B, 1))); }
+            else { out[i] = out[i + 1] = out[i + 2] = 255; out[i + 3] = Math.round(255 * m * Math.min(1, d / Math.max(765 - B, 1))); }
           }
           chrome.half = rgbaToB64(bw2, bh2, out); }
         log(`  Glass: ${(g.alpha * 100).toFixed(0)}% veil of rgb(${glass.gray.join(',')}) over a ${GLASS_PT.toFixed(2)}pt blur; live match ${g.rmsLive.toFixed(1)} levels, ${g.rmsFixed.toFixed(2)} with the correction pictures (${Math.round((glass.plus.length + glass.minus.length) / 1024)} KB), ${Math.round(performance.now() - t0)} ms`);
