@@ -719,11 +719,11 @@ function panelRight(img, bg, y, tol, limit) {
   }
   return img.W - 1;
 }
-function brightBoxes(img, bg, y0, y1, x0, x1, lift) {
+function brightBoxes(img, bg, y0, y1, x0, x1, lift, bnd) {
   const base = (bg[0] + bg[1] + bg[2]) / 3, seen = [];
   // the rounded corners mean the sheet is narrower near its top, so each row gets its own bounds
   const lim = Math.round(img.W * 0.25), L = [], R = [];
-  for (let y = y0; y < y1; y++) { L.push(panelLeft(img, bg, y, 10, lim) + 5); R.push(panelRight(img, bg, y, 10, lim) - 5); }
+  for (let y = y0; y < y1; y++) { if (bnd) { const e = bnd(y); L.push(e[0]); R.push(e[1]); } else { L.push(panelLeft(img, bg, y, 10, lim) + 5); R.push(panelRight(img, bg, y, 10, lim) - 5); } }
   const inside = (x, y) => x >= L[y - y0] && x <= R[y - y0];
   const cols = [];
   for (let x = x0; x < x1; x++) {
@@ -799,14 +799,16 @@ function buttonBox(img, bg, g) {
   const dark = ring.filter(v => v < 70).sort((a, b) => a - b);
   if (dark.length < 8) return g;
   const fill = dark[dark.length >> 1];
-  const inside = v => Math.abs(v - fill) <= 2.5 || v > fill + 10;
+  // the panel behind a button can sit within a level or two of its fill (Clear and Tinted), so the
+  // test is tight; the glyph's own bright pixels still pass
+  const inside = v => Math.abs(v - fill) <= 1.5 || v > fill + 40;
   // antialiased glyph edges sweep through the panel's own value, and fill and panel are only a few
   // levels apart, so a strict walk stops on a letter. allow a short interruption instead: a stroke
   // edge is a pixel or two, the panel goes on for ever.
-  const GAP = 5;
+  const GAP = 5, reach = Math.round(Math.max(g.w, g.h) * 2.6);
   const run = (sx, sy, dx, dy) => {
     let last = 0, miss = 0;
-    for (let k = 1; k < 2000; k++) {
+    for (let k = 1; k < reach; k++) {
       const x = sx + dx * k, y = sy + dy * k;
       if (x < 1 || y < 1 || x > img.W - 2 || y > img.H - 2) break;
       if (inside(hLum(img, x, y))) { last = k; miss = 0; }
@@ -815,9 +817,15 @@ function buttonBox(img, bg, g) {
     return last;
   };
   let fx = g.x - 4; if (fx < 1 || !inside(hLum(img, fx, gy))) fx = Math.round(g.x + g.w / 2);
-  const x0 = fx - run(fx, gy, -1, 0), x1 = fx + run(fx, gy, 1, 0);
+  let x0 = fx - run(fx, gy, -1, 0), x1 = fx + run(fx, gy, 1, 0);
+  // a button is centred on its glyph, and a weak edge (panel almost the colour of the fill) makes the walk
+  // run on past it, so trust the nearer side on each axis and mirror it
+  const gcx = g.x + g.w / 2, hx = Math.min(gcx - x0, x1 - gcx);
+  x0 = Math.round(gcx - hx) - 1; x1 = Math.round(gcx + hx) + 1;
   const cx = Math.round((x0 + x1) / 2);
-  const y0 = gy - run(cx, gy, 0, -1), y1 = gy + run(cx, gy, 0, 1);
+  let y0 = gy - run(cx, gy, 0, -1), y1 = gy + run(cx, gy, 0, 1);
+  const hy = Math.min(gy - y0, y1 - gy);
+  y0 = Math.round(gy - hy) - 1; y1 = Math.round(gy + hy) + 1;
   const w = x1 - x0 + 1, h = y1 - y0 + 1;
   if (w < g.w * 0.9 || h < g.h * 0.9 || w > img.W * 0.5 || h > img.H * 0.1) return g;
   return { x: x0, y: y0, w, h };
@@ -1125,23 +1133,70 @@ async function buildIcons(files, W, H, log) {
   return { press, mode, dpr };
 }
 
+// the sheet is outlined by a thin bright stroke whatever the transparency setting, so trace that
+// instead of matching the sheet's own colour, which changes with Clear, Tinted and Reduce Transparency
+function sheetRim(img) {
+  const W = img.W, H = img.H, lim = Math.round(W * 0.2);
+  const median = a => { a = a.slice().sort((p, q) => p - q); return a[Math.floor(a.length / 2)]; };
+  const edgeL = y => { for (let x = 0; x < lim; x++) if (hLum(img, x, y) > 14) return x; return -1; };
+  // the straight left side, well down the sheet, where only black sits outside it
+  const xs = [];
+  for (let y = Math.round(H * 0.72); y < Math.round(H * 0.88); y += 8) { const e = edgeL(y); if (e >= 0) xs.push(e); }
+  if (xs.length < 5) return null;
+  const ox = median(xs), yi = Math.round(H * 0.8), panel = hLum(img, ox + 14, yi);
+  let w = 1; while (w < 12 && hLum(img, ox + w, yi) > panel + 3) w++;
+  const inset = ox + w + 1;
+  // the top edge: the stroke is a brightness peak that the sheet's body falls away from, read down several columns
+  const tops = [];
+  for (const f of [0.2, 0.3, 0.4, 0.6, 0.7, 0.8]) {
+    const x = Math.round(W * f);
+    for (let y = Math.round(H * 0.3); y < Math.round(H * 0.6); y++) {
+      const v = hLum(img, x, y);
+      if (v >= hLum(img, x, y - 1) && v >= hLum(img, x, y + 1) && v - hLum(img, x, y + 10) >= 14 && v > hLum(img, x, y - 4) + 3) { tops.push(y); break; }
+    }
+  }
+  if (tops.length < 3) return null;
+  const top = median(tops) + 3;
+  // the bottom edge: the last bright row of the stroke, down the middle
+  const bots = [];
+  for (const f of [0.3, 0.5, 0.7]) {
+    const x = Math.round(W * f);
+    for (let y = H - 1; y > top + 200; y--) if (hLum(img, x, y) > 14) { bots.push(y - 3); break; }
+  }
+  if (!bots.length) return null;
+  const bot = median(bots);
+  let gap = H - 1 - bot, rad = 0, radBot = 0;
+  if (gap <= 3) gap = 0;
+  // corners: how far the outer edge takes to settle on the straight side
+  for (let y = top; y < top + 220 && y < H; y++) { const e = edgeL(y); if (e >= 0 && e <= ox + 1) { rad = y - top; break; } }
+  if (gap) for (let y = bot; y > bot - 240 && y > top; y--) { const e = edgeL(y); if (e >= 0 && e <= ox + 1) { radBot = bot - y; break; } }
+  // across the rounded top corners keep clear of the whole curve, below them just clear of the stroke
+  const bounds = y => y < top + rad ? [inset + rad, W - 1 - inset - rad] : [inset + 5, W - 1 - inset - 5];
+  return { ox, top, inset, rad, bot, gap, radBot, bounds };
+}
 async function buildHistory(files, W, H, log, press) {
   const half = await loadImg(files[IDX('hist1')]);
   if (half.W !== W || half.H !== H) throw new Error(`the History screenshot is ${half.W}x${half.H}, the resting one is ${W}x${H}.`);
   const dpr = Math.max(1, Math.round(W / (window.innerWidth || W)));
   const xa = Math.round(W * 0.14), xb = Math.round(W * 0.86);
-  const bgHalf = hPix(half, xb, Math.round(H * 0.93));
-  const topHalf = sheetTop(half, bgHalf, xa, xb, 10);
-  const insetHalf = panelLeft(half, bgHalf, topHalf + 120, 10, Math.round(W * 0.12));
-  let radHalf = 0;
-  for (let y = topHalf; y < topHalf + 160 && y < H; y++) { if (panelLeft(half, bgHalf, y, 10, Math.round(W * 0.2)) <= insetHalf + 1) { radHalf = y - topHalf; break; } }
-  // bottom edge: at the half height the sheet floats above the bottom of the screen with rounded bottom corners
-  let botHalf = H - 1;
-  { const N = 40, step = (xb - xa) / (N - 1);
-    for (let y = H - 1; y > topHalf + 200; y--) { let hit = 0; for (let i = 0; i < N; i++) if (hNear(hPix(half, Math.round(xa + i * step), y), bgHalf, 10)) hit++; if (hit / N >= 0.65) { botHalf = y; break; } } }
-  let gapHalf = H - 1 - botHalf, radBot = 0;
-  if (gapHalf <= 3) gapHalf = 0;
-  else for (let y = botHalf; y > botHalf - 240 && y > topHalf; y--) { if (panelLeft(half, bgHalf, y, 10, Math.round(W * 0.2)) <= insetHalf + 1) { radBot = botHalf - y; break; } }
+  // a reference colour taken from the sheet's left side, clear of the glow from the orange keys on its right
+  const bgHalf = hPix(half, Math.round(W * 0.3), Math.round(H * 0.93));
+  let topHalf, insetHalf, radHalf = 0, botHalf, gapHalf, radBot = 0;
+  const rimG = sheetRim(half);
+  if (rimG) {
+    topHalf = rimG.top; insetHalf = rimG.inset; radHalf = rimG.rad; botHalf = rimG.bot; gapHalf = rimG.gap; radBot = rimG.radBot;
+  } else {
+    // no stroke found: fall back to matching the panel colour
+    topHalf = sheetTop(half, bgHalf, xa, xb, 10);
+    insetHalf = panelLeft(half, bgHalf, topHalf + 120, 10, Math.round(W * 0.12));
+    for (let y = topHalf; y < topHalf + 160 && y < H; y++) { if (panelLeft(half, bgHalf, y, 10, Math.round(W * 0.2)) <= insetHalf + 1) { radHalf = y - topHalf; break; } }
+    botHalf = H - 1;
+    { const N = 40, step = (xb - xa) / (N - 1);
+      for (let y = H - 1; y > topHalf + 200; y--) { let hit = 0; for (let i = 0; i < N; i++) if (hNear(hPix(half, Math.round(xa + i * step), y), bgHalf, 10)) hit++; if (hit / N >= 0.65) { botHalf = y; break; } } }
+    gapHalf = H - 1 - botHalf;
+    if (gapHalf <= 3) gapHalf = 0;
+    else for (let y = botHalf; y > botHalf - 240 && y > topHalf; y--) { if (panelLeft(half, bgHalf, y, 10, Math.round(W * 0.2)) <= insetHalf + 1) { radBot = botHalf - y; break; } }
+  }
   // the real sheet is frosted glass, nearly solid: its own colour in the middle of the panel, where mostly black sits behind it
   const tintPx = []; for (let y = Math.round(H * 0.78); y < botHalf - 12; y += 6) tintPx.push(hPix(half, Math.round(W / 2), y));
   const tint = [0, 1, 2].map(c => { const v = tintPx.map(p => p[c]).sort((a, b) => a - b); return v.length ? v[Math.floor(v.length / 2)] : bgHalf[c]; });
@@ -1158,7 +1213,8 @@ async function buildHistory(files, W, H, log, press) {
 
   // the chrome in the top band: drag handle (centred), Edit (left), close (right)
   const bandY1 = topHalf + Math.round(H * 0.075);
-  let boxes = brightBoxes(half, bgHalf, topHalf, bandY1, insetHalf, W - insetHalf, 25)
+  // with the stroke traced, start a few rows down so the stroke's own lower edge is not read as a button
+  let boxes = brightBoxes(half, bgHalf, topHalf + (rimG ? 6 : 0), bandY1, insetHalf, W - insetHalf, 25, rimG ? rimG.bounds : null)
     .filter(b => b.w > 4 && b.h > 6);
   // the letters of "Edit" land as separate runs, so join anything sitting side by side on the same line
   boxes.sort((p, q) => p.x - q.x);
