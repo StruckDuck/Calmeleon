@@ -1182,12 +1182,14 @@ function fitGlass(half, rest, geo, dpr) {
   const B = C.p.map(pl => gBlur(pl, w, h, sig));
   const lum = new Float32Array(w * h); for (let i = 0; i < w * h; i++) lum[i] = (T.p[0][i] + T.p[1][i] + T.p[2][i]) / 3;
   // text, rules and buttons stand out from the smooth panel under them: find them in two passes
+  const known = (geo.boxes || []).filter(Boolean);
+  const flagBoxes = f => { for (const b of known) { const px = 10, x0 = Math.max(0, Math.floor((b.x - px) / ds)), x1 = Math.min(w - 1, Math.ceil((b.x + b.w + px) / ds)), y0 = Math.max(0, Math.floor((b.y - px) / ds)), y1 = Math.min(h - 1, Math.ceil((b.y + b.h + px) / ds)); for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) f[y * w + x] = 1; } return f; };
   let fg = new Uint8Array(w * h), sm = gBlur(lum, w, h, 4);
   for (let i = 0; i < w * h; i++) fg[i] = Math.abs(lum[i] - sm[i]) > 2 ? 1 : 0;
-  fg = gGrow(fg, w, h);
+  fg = flagBoxes(gGrow(fg, w, h));
   sm = gFill(lum, fg, w, h, 4);
   for (let i = 0; i < w * h; i++) fg[i] = Math.abs(lum[i] - sm[i]) > 1.5 ? 1 : 0;
-  fg = gGrow(fg, w, h);
+  fg = flagBoxes(gGrow(fg, w, h));
   const rx0 = Math.ceil(geo.inset / ds) + 1, rx1 = Math.floor((W - geo.inset) / ds) - 1, ry0 = Math.ceil(geo.y0 / ds), ry1 = Math.floor(geo.bot / ds) - 1;
   const m = 12;   // keep the fit clear of the rim and the rounded corners
   // k * blurred + o per channel, one shared k: the veil's opacity is 1 - k and its colour is o / (1 - k)
@@ -1696,9 +1698,17 @@ async function buildHistory(files, W, H, log, press) {
     const rest3 = await loadImg(files[IDX('rest')]);
     if (rest3.W === W && rest3.H === H) {
       const t0 = performance.now();
-      const g = fitGlass(half, rest3, { inset: insetHalf, top: topHalf, y0: topHalf + Math.round(H * 0.0775), bot: botHalf }, dpr);
+      const g = fitGlass(half, rest3, { inset: insetHalf, top: topHalf, y0: topHalf, bot: botHalf, boxes: [edit, close, handle] }, dpr);
       if (g) {
         glass = { alpha: +g.alpha.toFixed(4), gray: g.gray, ds: g.ds, x: g.x, y: g.y, w: g.w, h: g.h, plus: rgbaToB64(g.w, g.h, g.plus), minus: rgbaToB64(g.w, g.h, g.minus) };
+        // the header band keeps only what is really on it (handle, Edit, close) and is otherwise see-through, so the glass and the keys behind it stay put while the sheet moves
+        { const pad = 8, fe = 4, boxes = [edit, close, handle].filter(Boolean), bw2 = chrome.w, bh2 = chrome.h, src = cropRGBA(half, insetHalf, topHalf, bw2, bh2).data, out = new Uint8ClampedArray(src);
+          for (let y = 0; y < bh2; y++) for (let x = 0; x < bw2; x++) {
+            let a = 0; const X = insetHalf + x + 0.5, Y = topHalf + y + 0.5;
+            for (const b of boxes) { const cx = b.x + b.w / 2, cy = b.y + b.h / 2, hw = b.w / 2 + pad, hh = b.h / 2 + pad, r = Math.min(hw, hh), qx = Math.max(Math.abs(X - cx) - (hw - r), 0), qy = Math.max(Math.abs(Y - cy) - (hh - r), 0), d = Math.hypot(qx, qy) - r; a = Math.max(a, Math.max(0, Math.min(1, 0.5 - d / fe))); }
+            out[(y * bw2 + x) * 4 + 3] = Math.round(a * 255);
+          }
+          chrome.half = rgbaToB64(bw2, bh2, out); }
         log(`  Glass: ${(g.alpha * 100).toFixed(0)}% veil of rgb(${glass.gray.join(',')}) over a ${GLASS_PT.toFixed(2)}pt blur; live match ${g.rmsLive.toFixed(1)} levels, ${g.rmsFixed.toFixed(2)} with the correction pictures (${Math.round((glass.plus.length + glass.minus.length) / 1024)} KB), ${Math.round(performance.now() - t0)} ms`);
       }
     }
