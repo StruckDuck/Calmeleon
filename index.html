@@ -2598,6 +2598,22 @@ function setIcon(u) {
 }
 /* test: two quick taps on the back of the phone show up as two sharp jolts in the motion sensor; show the cover right away, before the Back Tap Shortcut switches apps */
 const TAP = { on: false, last: null, t1: 0, ts: 0, n: 0, peak: 0, timer: 0, pn: 0, pb: 0, pe: 0 };
+TAP.det = 0; TAP.gap = 0; TAP.blur = 0;
+TAP.log = (() => { try { const a = JSON.parse(localStorage.getItem('taplog') || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } })();
+function tapSave() { try { localStorage.setItem('taplog', JSON.stringify(TAP.log.slice(-60))); } catch (e) {} }
+function tapLeft(kind) {   // the page lost focus or was hidden after a detected double tap
+  if (!TAP.det) return; const d = Math.round(performance.now() - TAP.det);
+  if (d > 5000) { TAP.det = 0; return; }
+  if (kind === 'blur') { if (!TAP.blur) TAP.blur = d; return; }
+  TAP.log.push({ h: d, b: TAP.blur || null, g: Math.round(TAP.gap) }); TAP.det = 0; TAP.blur = 0; tapSave();
+}
+function tapLogText() {
+  const L = TAP.log, ok = L.filter(x => x.h != null).map(x => x.h), miss = L.filter(x => x.m).length;
+  if (!L.length) return 'No runs yet. Double tap the back with Back Tap on. Every run that leaves the app is recorded here.';
+  let t = ok.length ? ok.length + ' runs. Second tap to leaving the app: fastest ' + Math.min(...ok) + ' ms, average ' + Math.round(ok.reduce((a, b) => a + b, 0) / ok.length) + ' ms, slowest ' + Math.max(...ok) + ' ms.' : 'No completed runs yet.';
+  if (miss) t += ' ' + miss + ' false trigger' + (miss > 1 ? 's' : '') + ' (cover shown, app not left).';
+  return t + '\nLast runs, in ms (gap between the two taps, and when focus was lost): ' + L.slice(-20).map(x => x.m ? 'false trigger' : x.h + ' (gap ' + x.g + (x.b != null ? ', focus ' + x.b : '') + ')').join(', ');
+}
 const tapThresh = () => ({ l: 7, m: 4, h: 2.5 }[TRICK.tapSens || 'm'] || 4);
 ['pointerdown'].forEach(t => addEventListener(t, () => { TAP.pn++; TAP.pb = Date.now(); }, true));
 ['pointerup', 'pointercancel'].forEach(t => addEventListener(t, () => { TAP.pn = Math.max(0, TAP.pn - 1); TAP.pe = Date.now(); }, true));
@@ -2614,23 +2630,23 @@ function tapMotion(e) {
   if (j > TAP.peak) TAP.peak = j;
   if (!TRICK.tapCover || j < tapThresh() || now - TAP.ts < 70 || tapFinger()) return;
   TAP.ts = now; const dt = now - TAP.t1;
-  if (TAP.t1 && dt > 90 && dt < 700) { TAP.t1 = 0; coverShow(true); } else TAP.t1 = now;
+  if (TAP.t1 && dt > 90 && dt < 700) { TAP.t1 = 0; TAP.det = now; TAP.gap = dt; TAP.blur = 0; coverShow(true); } else TAP.t1 = now;
 }
 function tapStart() { if (TAP.on) return; TAP.on = true; addEventListener('devicemotion', tapMotion); }
 function tapAsk() {
   if (!TRICK.tapCover) return;
   try { if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') DeviceMotionEvent.requestPermission().then(r => { if (r === 'granted') tapStart(); }).catch(() => {}); else tapStart(); } catch (e) {}
 }
-setInterval(() => { const d = document.getElementById('tapDbg'); if (!d) { TAP.peak = 0; return; } d.textContent = (TAP.n ? 'Motion data is coming in. ' : 'No motion data yet. Turn it Off and On again and allow access. ') + 'Strongest jolt just now: ' + TAP.peak.toFixed(1) + ' (needs ' + tapThresh() + ').'; TAP.peak = 0; }, 500);
+setInterval(() => { const d = document.getElementById('tapDbg'); if (!d) { TAP.peak = 0; return; } d.textContent = (TAP.n ? 'Motion data is coming in. ' : 'No motion data yet. Turn it Off and On again and allow access. ') + 'Strongest jolt just now: ' + TAP.peak.toFixed(1) + ' (needs ' + tapThresh() + ').'; TAP.peak = 0; const tl = document.getElementById('tapLog'); if (tl) tl.textContent = tapLogText(); }, 500);
 if (TRICK.tapCover) tapStart();
 /* test: when the app goes to the background, cover the screen with a plain decoy screen so the app switcher card does not show the calculator */
 let COVER_BG = '#1b1b1d', COVER_IMG = '';
 function coverPrep(u) { try { COVER_IMG = u; const im = new Image(); im.onload = () => { try { const c = document.createElement('canvas'); c.width = c.height = 1; const x = c.getContext('2d'); x.drawImage(im, 4, 4, 1, 1, 0, 0, 1, 1); const d = x.getImageData(0, 0, 1, 1).data; COVER_BG = 'rgb(' + d[0] + ',' + d[1] + ',' + d[2] + ')'; } catch (e) {} }; im.src = u; } catch (e) {} }
 function coverEl() { let c = document.getElementById('decoyCover'); if (!c) { c = document.createElement('div'); c.id = 'decoyCover'; c.style.cssText = 'position:fixed;left:0;top:0;right:0;bottom:0;z-index:2147483647;display:none;align-items:center;justify-content:center'; c.innerHTML = '<img alt="" style="width:34vmin;height:34vmin;border-radius:22%;display:block">'; document.body.appendChild(c); } return c; }
-function coverShow(force) { if ((!force && !TRICK.cover) || !COVER_IMG) return; const c = coverEl(); c.style.background = COVER_BG; c.firstChild.src = COVER_IMG; c.style.display = 'flex'; void c.offsetHeight; if (force === true) { clearTimeout(TAP.timer); TAP.timer = setTimeout(() => { if (!document.hidden) coverHide(); }, 2500); } }
+function coverShow(force) { if ((!force && !TRICK.cover) || !COVER_IMG) return; const c = coverEl(); c.style.background = COVER_BG; c.firstChild.src = COVER_IMG; c.style.display = 'flex'; void c.offsetHeight; if (force === true) { clearTimeout(TAP.timer); TAP.timer = setTimeout(() => { if (!document.hidden) { coverHide(); if (TAP.det) { TAP.log.push({ m: 1 }); TAP.det = 0; tapSave(); } } }, 2500); } }
 function coverHide() { clearTimeout(TAP.timer); const c = document.getElementById('decoyCover'); if (c) c.style.display = 'none'; }
-document.addEventListener('visibilitychange', () => { if (document.hidden) { clearTimeout(TAP.timer); coverShow(); } else coverHide(); });
-addEventListener('pagehide', () => coverShow()); addEventListener('pageshow', coverHide);
+document.addEventListener('visibilitychange', () => { if (document.hidden) { clearTimeout(TAP.timer); coverShow(); tapLeft('hide'); } else coverHide(); });
+addEventListener('pagehide', () => { coverShow(); tapLeft('hide'); }); addEventListener('pageshow', coverHide); addEventListener('blur', () => tapLeft('blur'));
 function genericIcon() {
   const c = document.createElement('canvas'); c.width = c.height = 180; const x = c.getContext('2d');
   x.fillStyle = '#1b1b1d'; x.fillRect(0, 0, 180, 180);
@@ -3040,6 +3056,9 @@ function renderMenu(view, arg) {
       <div class="sub" style="color:#9a9a9a;margin-top:10px">Sensitivity</div>
       <div class="row"><button class="${(TRICK.tapSens || 'm') === 'l' ? 'primary' : ''}" data-xk="tapSens" data-xv="l">Low</button><button class="${(TRICK.tapSens || 'm') === 'm' ? 'primary' : ''}" data-xk="tapSens" data-xv="m">Medium</button><button class="${(TRICK.tapSens || 'm') === 'h' ? 'primary' : ''}" data-xk="tapSens" data-xv="h">High</button></div>
       <div class="sub" id="tapDbg" style="color:#9a9a9a;margin-top:8px"></div>
+      <div class="sub" style="color:#9a9a9a;margin-top:12px">Timing log. Each double tap that leads to leaving the app is timed from the second tap to the app being hidden.</div>
+      <div class="sub" id="tapLog" style="color:#9a9a9a;margin-top:6px;white-space:pre-wrap"></div>
+      <div class="row" style="margin-top:6px"><button id="tapCopy" style="flex:1">Copy results</button><button id="tapClear" style="flex:1">Clear results</button></div>
       </details><details class="sec" data-sec="shots"${M_OPEN.shots ? ' open' : ''}><summary>Setup</summary>
       <button class="wide" id="mList">Edit screenshots${dirty ? ' (changes waiting)' : ''}</button>
       <button class="wide" id="mRedo">Retake screenshots</button>
@@ -3052,6 +3071,9 @@ function renderMenu(view, arg) {
     m.querySelectorAll('[data-tm]').forEach(b => b.onclick = () => { TRICK.mode = b.dataset.tm; saveTrick(); renderMenu('home'); });
     m.querySelectorAll('[data-xk]').forEach(b => b.onclick = () => { const k = b.dataset.xk, v = b.dataset.xv; TRICK[k] = (k === 'xYear' || k === 'xClock') ? +v : (k === 'xBuff' || k === 'nd' || k === 'exitOn' || k === 'cover' || k === 'tapCover') ? !!v : v; saveTrick(); if (k === 'tapCover') tapAsk(); renderMenu('home'); });
     const exn = $('#exitName'); if (exn) exn.oninput = e => { TRICK.exitName = e.target.value; saveTrick(); };
+    const tlg = $('#tapLog'); if (tlg) tlg.textContent = tapLogText();
+    done('tapCopy', async () => { const ok = await copyText(tapLogText() + '\nRaw: ' + JSON.stringify(TAP.log)); const t = $('#tapLog'); if (t) t.textContent = (ok ? 'Copied.\n' : 'Could not copy.\n') + tapLogText(); });
+    done('tapClear', () => { TAP.log = []; tapSave(); const t = $('#tapLog'); if (t) t.textContent = tapLogText(); });
     m.querySelectorAll('[data-sg]').forEach(b => b.onclick = () => { TRICK[b.dataset.sg] = b.dataset.sg === 'sugCount' ? +b.dataset.sv : b.dataset.sv; saveTrick(); renderMenu('home'); });
     const xy = $('#xDelay'); if (xy) xy.onchange = e => { TRICK.xDelay = Math.max(-1440, Math.min(1440, Math.round(+e.target.value) || 0)); saveTrick(); renderMenu('home'); };
     m.querySelectorAll('[data-xtdel]').forEach(b => b.onclick = () => {
