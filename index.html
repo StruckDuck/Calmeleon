@@ -2513,7 +2513,7 @@ function ensureTargets() {
 function pushTrick() { try { $('#calcFrame').contentWindow.__setTrick(TRICK); } catch (e) {} }
 function saveTrick() { try { localStorage.setItem('calctrick', JSON.stringify(TRICK)); } catch (e) {} pushTrick(); }
 /* ---- presets: named snapshots of the trick settings (the dot settings and the up-next position are not part of one) ---- */
-const PRESET_SKIP = ['shift', 'size', 'xIdx', 'exitOn', 'exitName'];
+const PRESET_SKIP = ['shift', 'size', 'xIdx', 'exitOn', 'exitName', 'cover'];
 let PRESETS = [], PRESET_CUR = null, PRESET_MSG = '', PRESET_REN = null;
 try { const p = JSON.parse(localStorage.getItem('calcpresets') || 'null'); if (p && Array.isArray(p.list)) { PRESETS = p.list.filter(x => x && x.id && typeof x.name === 'string' && x.data && typeof x.data === 'object'); PRESET_CUR = p.cur || null; } } catch (e) {}
 function savePresets() { try { localStorage.setItem('calcpresets', JSON.stringify({ list: PRESETS, cur: PRESET_CUR })); } catch (e) {} }
@@ -2544,9 +2544,9 @@ function wirePresets(done) {
   done('prSaveAs', () => { const nm = $('#prName'), n = presetUnique(((nm && nm.value) || '').trim() || 'Preset ' + (PRESETS.length + 1)); const p = { id: presetId(), name: n, data: presetSnap() }; PRESETS.push(p); PRESET_CUR = p.id; savePresets(); again('Saved as "' + n + '".'); });
   m.querySelectorAll('[data-prload]').forEach(b => b.onclick = () => {
     const p = PRESETS.find(x => x.id === b.dataset.prload); if (!p) return;
-    const keep = { shift: TRICK.shift, size: TRICK.size, exitOn: TRICK.exitOn, exitName: TRICK.exitName };
+    const keep = { shift: TRICK.shift, size: TRICK.size, exitOn: TRICK.exitOn, exitName: TRICK.exitName, cover: TRICK.cover };
     TRICK = JSON.parse(JSON.stringify(p.data)); if (!TRICK.mode || TRICK.mode === 'off') TRICK.mode = 'finisher';
-    if (keep.shift !== undefined) TRICK.shift = keep.shift; if (keep.size !== undefined) TRICK.size = keep.size; if (keep.exitOn !== undefined) TRICK.exitOn = keep.exitOn; if (keep.exitName !== undefined) TRICK.exitName = keep.exitName; TRICK.xIdx = 0;
+    if (keep.shift !== undefined) TRICK.shift = keep.shift; if (keep.size !== undefined) TRICK.size = keep.size; if (keep.exitOn !== undefined) TRICK.exitOn = keep.exitOn; if (keep.exitName !== undefined) TRICK.exitName = keep.exitName; if (keep.cover !== undefined) TRICK.cover = keep.cover; TRICK.xIdx = 0;
     PRESET_CUR = p.id; savePresets(); saveTrick(); again('Loaded "' + p.name + '".');
   });
   m.querySelectorAll('[data-prren]').forEach(b => b.onclick = () => { PRESET_REN = b.dataset.prren; PRESET_MSG = ''; renderMenu('home'); const i = $('#prRenIn'); if (i) { i.focus(); i.select(); } });
@@ -2594,7 +2594,16 @@ function setIcon(u) {
   let l = document.querySelector('link[rel="apple-touch-icon"]');
   if (!l) { l = document.createElement('link'); l.rel = 'apple-touch-icon'; document.head.appendChild(l); }
   l.href = u; const i = document.querySelector('link[rel="icon"]'); if (i) i.href = u;
+  coverPrep(u);
 }
+/* test: when the app goes to the background, cover the screen with a plain decoy screen so the app switcher card does not show the calculator */
+let COVER_BG = '#1b1b1d', COVER_IMG = '';
+function coverPrep(u) { try { COVER_IMG = u; const im = new Image(); im.onload = () => { try { const c = document.createElement('canvas'); c.width = c.height = 1; const x = c.getContext('2d'); x.drawImage(im, 4, 4, 1, 1, 0, 0, 1, 1); const d = x.getImageData(0, 0, 1, 1).data; COVER_BG = 'rgb(' + d[0] + ',' + d[1] + ',' + d[2] + ')'; } catch (e) {} }; im.src = u; } catch (e) {} }
+function coverEl() { let c = document.getElementById('decoyCover'); if (!c) { c = document.createElement('div'); c.id = 'decoyCover'; c.style.cssText = 'position:fixed;left:0;top:0;right:0;bottom:0;z-index:2147483647;display:none;align-items:center;justify-content:center'; c.innerHTML = '<img alt="" style="width:34vmin;height:34vmin;border-radius:22%;display:block">'; document.body.appendChild(c); } return c; }
+function coverShow() { if (!TRICK.cover || !COVER_IMG) return; const c = coverEl(); c.style.background = COVER_BG; c.firstChild.src = COVER_IMG; c.style.display = 'flex'; void c.offsetHeight; }
+function coverHide() { const c = document.getElementById('decoyCover'); if (c) c.style.display = 'none'; }
+document.addEventListener('visibilitychange', () => { if (document.hidden) coverShow(); else coverHide(); });
+addEventListener('pagehide', coverShow); addEventListener('pageshow', coverHide);
 function genericIcon() {
   const c = document.createElement('canvas'); c.width = c.height = 180; const x = c.getContext('2d');
   x.fillStyle = '#1b1b1d'; x.fillRect(0, 0, 180, 180);
@@ -2996,6 +3005,9 @@ function renderMenu(view, arg) {
       <div class="sub" style="color:#9a9a9a;margin-top:8px">Hold the . key for about a second, then let go. Doppulator runs the Shortcut with the name below. Make that Shortcut in the Shortcuts app with one step: Open App, then choose Calculator. The name must match exactly.</div>
       <div class="row"><button class="${TRICK.exitOn ? '' : 'primary'}" data-xk="exitOn" data-xv="">Off</button><button class="${TRICK.exitOn ? 'primary' : ''}" data-xk="exitOn" data-xv="1">On</button></div>
       <div class="sub" style="color:#9a9a9a;margin-top:10px">Shortcut name</div><input class="field" id="exitName" placeholder="Open Calc" autocomplete="off" autocapitalize="off" value="${esc(TRICK.exitName || '')}" style="width:100%;box-sizing:border-box">
+      </details><details class="sec" data-sec="cover"${M_OPEN.cover ? ' open' : ''}><summary>Screen when minimized (test)</summary>
+      <div class="sub" style="color:#9a9a9a;margin-top:8px">Test. When you leave the app, the screen switches to a plain color with your decoy icon, to see whether the app switcher card shows that and not the calculator. Turn it On, leave the app, then open the app switcher and look. Meant for the decoy icons, not the cloned Calculator icon.</div>
+      <div class="row"><button class="${TRICK.cover ? '' : 'primary'}" data-xk="cover" data-xv="">Off</button><button class="${TRICK.cover ? 'primary' : ''}" data-xk="cover" data-xv="1">On</button></div>
       </details><details class="sec" data-sec="shots"${M_OPEN.shots ? ' open' : ''}><summary>Setup</summary>
       <button class="wide" id="mList">Edit screenshots${dirty ? ' (changes waiting)' : ''}</button>
       <button class="wide" id="mRedo">Retake screenshots</button>
@@ -3006,7 +3018,7 @@ function renderMenu(view, arg) {
       `;
     m.querySelectorAll('details.sec').forEach(d => d.addEventListener('toggle', () => { M_OPEN[d.dataset.sec] = d.open; }));
     m.querySelectorAll('[data-tm]').forEach(b => b.onclick = () => { TRICK.mode = b.dataset.tm; saveTrick(); renderMenu('home'); });
-    m.querySelectorAll('[data-xk]').forEach(b => b.onclick = () => { const k = b.dataset.xk, v = b.dataset.xv; TRICK[k] = (k === 'xYear' || k === 'xClock') ? +v : (k === 'xBuff' || k === 'nd' || k === 'exitOn') ? !!v : v; saveTrick(); renderMenu('home'); });
+    m.querySelectorAll('[data-xk]').forEach(b => b.onclick = () => { const k = b.dataset.xk, v = b.dataset.xv; TRICK[k] = (k === 'xYear' || k === 'xClock') ? +v : (k === 'xBuff' || k === 'nd' || k === 'exitOn' || k === 'cover') ? !!v : v; saveTrick(); renderMenu('home'); });
     const exn = $('#exitName'); if (exn) exn.oninput = e => { TRICK.exitName = e.target.value; saveTrick(); };
     m.querySelectorAll('[data-sg]').forEach(b => b.onclick = () => { TRICK[b.dataset.sg] = b.dataset.sg === 'sugCount' ? +b.dataset.sv : b.dataset.sv; saveTrick(); renderMenu('home'); });
     const xy = $('#xDelay'); if (xy) xy.onchange = e => { TRICK.xDelay = Math.max(-1440, Math.min(1440, Math.round(+e.target.value) || 0)); saveTrick(); renderMenu('home'); };
