@@ -1,5 +1,0 @@
-{
-  "version": 1,
-  "include": ["/*"],
-  "exclude": ["/style.css", "/app.js", "/admin.css", "/admin-ui.js", "/img/foot.png", "/img/wordmark.png"]
-}
